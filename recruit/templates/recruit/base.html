@@ -1,0 +1,17 @@
+{% extends 'allianceauth/base-bs5.html' %}
+
+{% load i18n %}
+
+{% block page_title %}
+    {% translate "Recruit Plugin" %}
+{% endblock %}
+
+{% block header_nav_brand %}
+    {% translate "Recruit Plugin" %}
+{% endblock header_nav_brand %}
+
+{% block content %}
+    <div class="allianceauth-recruit-plugin">
+        {% block details %}{% endblock %}
+    </div>
+{% endblock %}
