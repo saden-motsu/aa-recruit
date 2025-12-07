@@ -5,7 +5,7 @@ requires = [
 ]
 
 [project]
-name = "aa-recruit-plugin"
+name = "recruit"
 description = "recruit Plugin for Alliance Auth (GitHub Version)"
 readme = "README.md"
 keywords = [
@@ -39,13 +39,13 @@ dynamic = [
 dependencies = [
     "allianceauth>=4.3.1,<5",
 ]
-urls.Changelog = "https://github.com/ppfeufer/aa-recruit-table-plugin/blob/master/CHANGELOG.md"
-urls.Tracker = "https://github.com/ppfeufer/aa-recruit-table-plugin/issues"
+urls.Changelog = "https://example.com"
+urls.Tracker = "https://example.com"
 
 [tool.hatch.version]
-path = "recruit-table/__init__.py"
+path = "recruit/__init__.py"
 
 [tool.hatch.build]
 include = [
-    "/recruit-table",
+    "/recruit",
 ]

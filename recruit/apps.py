@@ -7,7 +7,7 @@ from django.apps import AppConfig
 from recruit import __version__
 
 
-class RecruitTableConfig(AppConfig):
+class RecruitConfig(AppConfig):
     """App Config"""
 
     name = "recruit"
