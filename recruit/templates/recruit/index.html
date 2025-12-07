@@ -10,7 +10,20 @@
         </div>
 
         <div class="card-body">
-            {{ text }}
+            <div class="mb-3">
+                <label class="form-label" for="character-ownership-select">
+                    {% translate "Select a main character name" %}
+                </label>
+                <select id="character-ownership-select" class="form-select">
+                    {% if main_characters %}
+                        {% for user_name, character_name in main_characters %}
+                            <option value="{{ user_name }}">{{user_name}} - {{character_name}}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="" selected disabled>{% translate "No character ownerships available" %}</option>
+                    {% endif %}
+                </select>
+            </div>
         </div>
     </div>
 {% endblock %}
