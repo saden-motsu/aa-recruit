@@ -10,7 +10,7 @@ from django.shortcuts import render
 from allianceauth.authentication.models import UserProfile
 
 
-def _get_main_characters() -> list[(int, str)]:
+def _get_main_characters() -> list[str, str]:
     """
     Gets a list of all main character names.
     """
@@ -31,8 +31,14 @@ def index(request: WSGIRequest) -> HttpResponse:
     :return:
     """
 
+    selected_user_id = request.GET.get("selected_user_id")
+    main_characters = _get_main_characters()
+    if selected_user_id is None and main_characters:
+        selected_user_id = main_characters[0][0]
+
     context = {
-        "main_characters": _get_main_characters(),
+        "main_characters": main_characters,
+        "selected_user_id": selected_user_id,
     }
 
     return render(request, "recruit/index.html", context)

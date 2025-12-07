@@ -11,18 +11,19 @@
 
         <div class="card-body">
             <div class="mb-3">
-                <label class="form-label" for="character-ownership-select">
-                    {% translate "Select a main character name" %}
-                </label>
-                <select id="character-ownership-select" class="form-select">
-                    {% if main_characters %}
-                        {% for user_name, character_name in main_characters %}
-                            <option value="{{ user_name }}">{{user_name}} - {{character_name}}</option>
-                        {% endfor %}
-                    {% else %}
-                        <option value="" selected disabled>{% translate "No character ownerships available" %}</option>
-                    {% endif %}
-                </select>
+                <form method="GET" id="user_id_selection">
+                    <select id="selected_user_id" name="selected_user_id" class="form-select" onchange="this.form.submit()">
+                        {% if main_characters %}
+                            {% for user_id, character_name in main_characters %}
+                                <option value="{{ user_id }}" {% if user_id == selected_user_id %} selected{% endif %}>
+                                    {{ character_name }}
+                                </option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="" selected disabled>{% translate "No character ownerships available" %}</option>
+                        {% endif %}
+                    </select>
+                </form>
             </div>
         </div>
     </div>
