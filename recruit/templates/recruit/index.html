@@ -6,16 +6,16 @@
 {% block details %}
     <div class="card card-primary">
         <div class="card-header">
-            <div class="card-title">{% translate "Headline" %}</div>
+            <div class="card-title">{% translate "The things with the stuff." %}</div>
         </div>
 
         <div class="card-body">
             <div class="mb-3">
                 <form method="GET" id="user_id_selection">
-                    <select id="selected_user_id" name="selected_user_id" class="form-select" onchange="this.form.submit()">
+                    <select id="selected_username" name="selected_username" class="form-select" onchange="this.form.submit()">
                         {% if main_characters %}
                             {% for user_id, character_name in main_characters %}
-                                <option value="{{ user_id }}" {% if user_id == selected_user_id %} selected{% endif %}>
+                                <option value="{{ user_id }}" {% if user_id == selected_username %} selected{% endif %}>
                                     {{ character_name }}
                                 </option>
                             {% endfor %}
@@ -24,6 +24,22 @@
                         {% endif %}
                     </select>
                 </form>
+                <table>
+                    <tr>
+                        <td>{% translate "Character Name" %}</td>
+                        <td>{% translate "Total SP" %}</td>
+                        <td>{% translate "Wallet ISK" %}</td>
+                        <td>{% translate "Asset ISK" %}</td>
+                    </tr>
+                    {% for character in user_characters %}
+                        <tr>
+                            <td>{{character.name}}</td>
+                            <td>{{character.total_sp}}</td>
+                            <td>{{character.wallet_isk}}</td>
+                            <td>{{character.asset_value}}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
             </div>
         </div>
     </div>
@@ -33,6 +49,11 @@
 {% endblock %}
 
 {% block extra_css %}
+<style>
+    table, th, td {
+        border: 1px solid black;
+    }
+</style>
 {% endblock %}
 
 {% block extra_script %}
