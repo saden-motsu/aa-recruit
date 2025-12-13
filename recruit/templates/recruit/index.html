@@ -5,10 +5,6 @@
 
 {% block details %}
     <div class="card card-primary">
-        <div class="card-header">
-            <div class="card-title">{% translate "The things with the stuff." %}</div>
-        </div>
-
         <div class="card-body">
             <div class="mb-3">
                 <form method="GET" id="user_id_selection">
@@ -24,6 +20,9 @@
                         {% endif %}
                     </select>
                 </form>
+                {% if blacklist_url %}<a href="{{ blacklist_url }}" target="_blank">GICE Blacklist</a>{% endif %}
+                <br />
+                {% if eve411_url %}<a href="{{ eve411_url }}" target="_blank">EVE411</a>{% endif %}
                 <table>
                     <tr>
                         <td>{% translate "Character Name" %}</td>
@@ -33,10 +32,10 @@
                     </tr>
                     {% for character in user_characters %}
                         <tr>
-                            <td>{{character.name}}</td>
-                            <td>{{character.total_sp}}</td>
-                            <td>{{character.wallet_isk}}</td>
-                            <td>{{character.asset_value}}</td>
+                            <td><a href="https://evewho.com/character/{{character.id}}" target="_blank">{{character.name}}</a></td>
+                            <td>{{character.total_sp|intcomma}}</td>
+                            <td>{{character.wallet_isk|floatformat:"2g"}}</td>
+                            <td>{{character.asset_value|floatformat:"2g"}}</td>
                         </tr>
                     {% endfor %}
                 </table>
