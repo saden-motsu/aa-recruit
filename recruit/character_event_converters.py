@@ -157,7 +157,7 @@ def _get_character_contracts(
 
         return "|".join(parts)
 
-    def _contract_details(contract: CharacterContract) -> str:
+    def _contract_details(contract: CharacterContract, isk_value) -> str:
         parts: list[str] = []
 
         if title := contract.title:
@@ -165,6 +165,8 @@ def _get_character_contracts(
         parts.append(f"Status:{contract.get_status_display().title()}")
 
         isk_fields = []
+        if isk_value:
+            isk_fields.append(f"ISK Value:{str(isk_value)}")
         if price := contract.price:
             isk_fields.append(f"Price:{price}")
         if reward := contract.reward:
@@ -201,6 +203,7 @@ def _get_character_contracts(
         other = _counterparty(contract)
         if not other:
             continue
+        isk_value = _isk_value(contract)
         events.append(
             CharacterEvent(
                 recruit_id=contract.character.id,
@@ -208,12 +211,12 @@ def _get_character_contracts(
                 other_character_id=other.id,
                 other_character_name=other.name,
                 summary=_contract_summary(contract),
-                details=_contract_details(contract),
+                details=_contract_details(contract, isk_value),
                 timestamp=contract.date_completed
                 or contract.date_expired
                 or contract.date_accepted
                 or contract.date_issued,
-                isk_value=_isk_value(contract),
+                isk_value=isk_value,
             )
         )
 
