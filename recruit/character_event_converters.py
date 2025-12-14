@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # Standard Library
 import html
+from decimal import Decimal
 from itertools import chain
 
 # Third Party
@@ -11,6 +12,7 @@ from memberaudit.models import (
     CharacterContract,
     CharacterMail,
     CharacterWalletJournalEntry,
+    CharacterWalletTransaction,
 )
 from memberaudit.models.general import MailEntity
 
@@ -31,8 +33,15 @@ def get_all_events(character_query_set: CharacterQuerySet) -> list[CharacterEven
     mail_events = _get_mail_events(character_query_set)
     character_contract_events = _get_character_contracts(character_query_set)
     wallet_events = _get_wallet_journal_entries(character_query_set)
+    wallet_transaction_events = _get_wallet_transactions(character_query_set)
     return list(
-        chain(contact_events, mail_events, character_contract_events, wallet_events)
+        chain(
+            contact_events,
+            mail_events,
+            character_contract_events,
+            wallet_events,
+            wallet_transaction_events,
+        )
     )
 
 
@@ -238,10 +247,14 @@ def _get_wallet_journal_entries(
         if not other:
             continue
 
+        ref_type = character_wallet_journal_entry.ref_type
+        if ref_type != "player_donation":
+            continue
+
         ref_type_display = character_wallet_journal_entry.ref_type.replace(
             "_", " "
         ).title()
-        summary = f"{ref_type_display}\n{character_wallet_journal_entry.description}"
+        summary = f"{ref_type_display}"
         details = ""
         if character_wallet_journal_entry.context_id:
             context_type = character_wallet_journal_entry.get_context_id_type_display()
@@ -261,6 +274,72 @@ def _get_wallet_journal_entries(
                 details=details,
                 timestamp=character_wallet_journal_entry.date,
                 isk_value=character_wallet_journal_entry.amount,
+            )
+        )
+
+    return events
+
+
+def _get_wallet_transactions(
+    character_query_set: CharacterQuerySet,
+) -> list[CharacterEvent]:
+    character_wallet_transactions = CharacterWalletTransaction.objects.filter(
+        character__in=character_query_set
+    ).select_related("character", "client", "eve_type__market_price")
+
+    character_ids = set(
+        character_query_set.values_list("eve_character__character_id", flat=True)
+    )
+
+    def _counterparty(tx: CharacterWalletTransaction) -> EveEntity | None:
+        client = tx.client
+        if not client or not client.is_character or client.is_npc:
+            return None
+        if client.id in character_ids:
+            return None
+        return client
+
+    def _ratio(tx: CharacterWalletTransaction) -> Decimal | None:
+        market_price = tx.eve_type.market_price.average_price
+        if market_price is None or market_price <= 0:
+            return None
+        try:
+            return Decimal(tx.unit_price) / Decimal(market_price)
+        except (ArithmeticError, ValueError):
+            return None
+
+    events: list[CharacterEvent] = []
+    for transaction in character_wallet_transactions:
+        other = _counterparty(transaction)
+        if not other:
+            continue
+
+        ratio = _ratio(transaction)
+        if ratio is None or (Decimal("0.1") < ratio < Decimal("2")):
+            continue
+
+        total_price = transaction.quantity * transaction.unit_price
+        if total_price < 10_000_000:
+            continue
+
+        side = "Buy" if transaction.is_buy else "Sell"
+        percent = float(ratio * Decimal("100"))
+        summary = f"{side} {transaction.quantity}x {transaction.eve_type.name}"
+        details = (
+            f"Unit:{transaction.unit_price} Avg:{transaction.eve_type.market_price.average_price} "
+            f"({percent:.1f}% of avg)"
+        )
+
+        events.append(
+            CharacterEvent(
+                recruit_id=transaction.character.id,
+                recruit_name=transaction.character.name,
+                other_character_id=other.id,
+                other_character_name=other.name,
+                summary=summary,
+                details=details,
+                timestamp=transaction.date,
+                isk_value=transaction.unit_price * transaction.quantity,
             )
         )
 
