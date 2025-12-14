@@ -9,8 +9,7 @@ from urllib.parse import quote
 
 # Third Party
 from memberaudit.managers.characters import CharacterQuerySet
-from memberaudit.models.character_sections_1 import CharacterAsset
-from memberaudit.models.characters import Character
+from memberaudit.models import Character, CharacterAsset
 
 # Django
 from django.contrib.auth.decorators import login_required, permission_required

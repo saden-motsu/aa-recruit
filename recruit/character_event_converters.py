@@ -5,7 +5,12 @@ from itertools import chain
 
 # Third Party
 from memberaudit.managers.characters import CharacterQuerySet
-from memberaudit.models import CharacterContact, CharacterContract, CharacterMail
+from memberaudit.models import (
+    CharacterContact,
+    CharacterContract,
+    CharacterMail,
+    CharacterWalletJournalEntry,
+)
 from memberaudit.models.general import MailEntity
 
 # Django
@@ -24,7 +29,10 @@ def get_all_events(character_query_set: CharacterQuerySet) -> list[CharacterEven
     contact_events = _get_contact_events(character_query_set)
     mail_events = _get_mail_events(character_query_set)
     character_contract_events = _get_character_contracts(character_query_set)
-    return list(chain(contact_events, mail_events, character_contract_events))
+    wallet_events = _get_wallet_journal_entries(character_query_set)
+    return list(
+        chain(contact_events, mail_events, character_contract_events, wallet_events)
+    )
 
 
 def _get_contact_events(character_query_set: CharacterQuerySet) -> list[CharacterEvent]:
@@ -49,7 +57,7 @@ def _get_contact_events(character_query_set: CharacterQuerySet) -> list[Characte
                 recruit_name=character.name,
                 other_character_id=other.id,
                 other_character_name=other.name,
-                details=f"{other.name or str(other.id)}:{character_contact.standing}",
+                details=f"{other.name or str(other.id)}: Standings {character_contact.standing}",
             )
         )
     return result
@@ -122,17 +130,21 @@ def _get_character_contracts(
             return entity
         return None
 
-    def _contract_details(contract: CharacterContract, other: EveEntity) -> str:
+    def _contract_details(contract: CharacterContract) -> str:
         parts: list[str] = []
         parts.append(
-            f"{contract.get_contract_type_display().title()} | {contract.get_status_display().title()}"
+            f"{contract.summary()} ({contract.get_contract_type_display().title()})"
         )
-        if issuer_corporation := contract.issuer_corporation:
-            parts.append(str(issuer_corporation))
+
         if title := contract.title:
-            parts.append(title)
-        if summary := contract.summary():
-            parts.append(str(summary))
+            parts.append(f"Info by Issuer:{title}")
+        if availability := contract.get_availability_display():
+            parts.append(
+                f"Availability:{availability.capitalize()} - {contract.assignee.name}"
+            )
+        if issuer := contract.issuer:
+            parts.append(f"Contractor:{issuer}")
+        parts.append(f"Status:{contract.get_status_display().title()}")
 
         isk_fields = []
         if price := contract.price:
@@ -147,7 +159,9 @@ def _get_character_contracts(
             parts.append(", ".join(isk_fields))
 
         for item in contract.items.all():
-            parts.append(f"{item.quantity}x {item.name_display}")
+            parts.append(
+                f"{item.quantity}x <a href=https://evetycoon.com/market/{item.eve_type.id}>{item.name_display}</a>"
+            )
 
         return "\n".join(parts)
 
@@ -175,12 +189,64 @@ def _get_character_contracts(
                 recruit_name=contract.character.name,
                 other_character_id=other.id,
                 other_character_name=other.name,
-                details=_contract_details(contract, other),
+                details=_contract_details(contract),
                 timestamp=contract.date_completed
                 or contract.date_expired
                 or contract.date_accepted
                 or contract.date_issued,
                 isk_value=_isk_value(contract),
+            )
+        )
+
+    return events
+
+
+def _get_wallet_journal_entries(
+    character_query_set: CharacterQuerySet,
+) -> list[CharacterEvent]:
+
+    character_wallet_journal_entries = CharacterWalletJournalEntry.objects.filter(
+        character__in=character_query_set
+    ).select_related("character", "first_party", "second_party")
+
+    character_ids = set(
+        character_query_set.values_list("eve_character__character_id", flat=True)
+    )
+
+    def _counterparty(entry: CharacterWalletJournalEntry) -> EveEntity | None:
+        for entity in (entry.first_party, entry.second_party):
+            if not entity or not entity.is_character or entity.is_npc:
+                continue
+            if entity.id in character_ids:
+                continue
+            return entity
+        return None
+
+    events: list[CharacterEvent] = []
+    for character_wallet_journal_entry in character_wallet_journal_entries:
+        other = _counterparty(character_wallet_journal_entry)
+        if not other:
+            continue
+
+        ref_type_display = character_wallet_journal_entry.ref_type.replace(
+            "_", " "
+        ).title()
+        details = f"{ref_type_display}\n{character_wallet_journal_entry.description}"
+        if character_wallet_journal_entry.context_id:
+            context_type = character_wallet_journal_entry.get_context_id_type_display()
+            details = f"{details}\nContext:{context_type} ({character_wallet_journal_entry.context_id})"
+        if character_wallet_journal_entry.reason:
+            details = f"{details}\nReason:{character_wallet_journal_entry.reason}"
+
+        events.append(
+            CharacterEvent(
+                recruit_id=character_wallet_journal_entry.character.id,
+                recruit_name=character_wallet_journal_entry.character.name,
+                other_character_id=other.id,
+                other_character_name=other.name,
+                details=details,
+                timestamp=character_wallet_journal_entry.date,
+                isk_value=character_wallet_journal_entry.amount,
             )
         )
 

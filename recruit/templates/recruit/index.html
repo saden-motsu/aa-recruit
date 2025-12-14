@@ -23,7 +23,7 @@
                 {% if blacklist_url %}<a href="{{ blacklist_url }}" target="_blank">GICE Blacklist</a>{% endif %}
                 <br />
                 {% if eve411_url %}<a href="{{ eve411_url }}" target="_blank">EVE411</a>{% endif %}
-                <table>
+                <table class="simple">
                     <tr>
                         <td>{% translate "Character Name" %}</td>
                         <td>{% translate "Total SP" %}</td>
@@ -42,23 +42,20 @@
                 <h3 class="mt-4">{% translate "Character Events" %}</h3>
                 {% if character_grouped_events %}
                     {% for character_name, evewho, character_events in character_grouped_events %}
-                        <h5 class="mt-3"><a href={{evewho}}>{{character_name}}</a></h5>
-                        <table class="mb-3">
-                            <tr>
-                                <td>{% translate "Recruit" %}</td>
-                                <td>{% translate "Timestamp" %}</td>
-                                <td>{% translate "ISK" %}</td>
-                                <td>{% translate "Details" %}</td>
-                            </tr>
+                        <details class="character_group">
+                            <summary><a href={{evewho}}>{{character_name}}</a></summary>
                             {% for event in character_events %}
-                                <tr>
-                                    <td>{{ event.recruit_name }}</td>
-                                    <td>{% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
-                                    <td>{% if event.isk_value != None %}{{ event.isk_value|floatformat:"2g" }}{% else %}-{% endif %}</td>
-                                    <td>{% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}</td>
-                                </tr>
+                                <details>
+                                    <summary>
+                                        {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
+                                        {{ event.recruit_name }}
+                                        {% if event.isk_value != None %} | {{ event.isk_value|floatformat:"2g" }} ISK{% endif %}
+                                        {% if event.summary %} | {{ event.summary }}{% endif %}
+                                    </summary>
+                                    {% if event.details %}{% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}{% endif %}
+                                </details>
                             {% endfor %}
-                        </table>
+                        </details>
                     {% endfor %}
                 {% else %}
                     <p class="text-muted">{% translate "No events available." %}</p>
@@ -73,8 +70,11 @@
 
 {% block extra_css %}
 <style>
-    table, th, td {
+    table.simple th, td {
         border: 1px solid black;
+    }
+    details.character_group details {
+        margin-left: 10px;
     }
 </style>
 {% endblock %}
