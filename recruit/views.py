@@ -4,7 +4,6 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from datetime import datetime
-from pprint import pprint
 from typing import Any
 from urllib.parse import quote
 
@@ -103,18 +102,20 @@ def _get_eve411_url(character_names: Iterable[str]) -> str | None:
 
 def _group_character_events(
     character_events: Iterable[CharacterEvent],
-) -> list[list[CharacterEvent]]:
+) -> list[tuple[str, list[CharacterEvent]]]:
     grouped_events = defaultdict(list)
 
     for character_event in character_events:
-        grouped_events[character_event.other_character_id].append(character_event)
+        grouped_events[character_event.other_character_name].append(character_event)
 
-    for events in grouped_events.values():
-        events.sort(key=lambda x: (x.timestamp is None, x.timestamp or datetime.max))
+    results: list[tuple[str, list[CharacterEvent]]] = []
+    for character_name, character_events in grouped_events.items():
+        character_events.sort(
+            key=lambda x: (x.timestamp is None, x.timestamp or datetime.max)
+        )
+        results.append((character_name, character_events))
 
-    result = list(grouped_events.values())
-    pprint(result)
-    return result
+    return results
 
 
 @login_required
