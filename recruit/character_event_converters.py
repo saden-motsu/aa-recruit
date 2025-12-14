@@ -79,7 +79,7 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
                     recruit_id=character_mail.character.id,
                     recruit_name=character_mail.character.name,
                     other_character_id=mail_entity.id,
-                    other_character_name=mail_entity.name_plus,
+                    other_character_name=mail_entity.name,
                     details=_get_mail_details(character_mail),
                     timestamp=character_mail.timestamp,
                 )
@@ -92,5 +92,5 @@ def _get_mail_details(character_mail: CharacterMail) -> str:
     return f"""{"" if character_mail.is_read else "Unread:"}Subject:{character_mail.subject}
 From:{character_mail.sender.name_plus}
 To:{",".join(x.name_plus for x in character_mail.recipients.all())}
-{character_mail.body}
+{character_mail.body_html}
 """

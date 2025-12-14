@@ -4,26 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import TypeAlias
-
-# Third Party
-from memberaudit.models import (
-    CharacterContact,
-    CharacterContract,
-    CharacterContractBid,
-    CharacterMail,
-    CharacterWalletJournalEntry,
-    CharacterWalletTransaction,
-)
-
-EventDetails: TypeAlias = (
-    CharacterContact
-    | CharacterContract
-    | CharacterContractBid
-    | CharacterMail
-    | CharacterWalletJournalEntry
-    | CharacterWalletTransaction
-)
 
 
 @dataclass(slots=True, order=True, frozen=True)

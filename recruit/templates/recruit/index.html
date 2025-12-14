@@ -55,7 +55,7 @@
                                     <td>{{ event.recruit_name }}</td>
                                     <td>{% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
                                     <td>{% if event.isk_value != None %}{{ event.isk_value|floatformat:"2g" }}{% else %}-{% endif %}</td>
-                                    <td>{{ event.details }}</td>
+                                    <td>{% autoescape off %}{{ event.details }}{% endautoescape %}</td>
                                 </tr>
                             {% endfor %}
                         </table>
