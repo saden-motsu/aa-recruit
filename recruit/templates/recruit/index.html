@@ -39,6 +39,32 @@
                         </tr>
                     {% endfor %}
                 </table>
+                <h3 class="mt-4">{% translate "Character Events" %}</h3>
+                {% if character_grouped_events %}
+                    {% for events in character_grouped_events %}
+                        <h5 class="mt-3">{{character_grouped_events|length}}</h5>
+                        <table class="mb-3">
+                            <tr>
+                                <td>{% translate "Recruit" %}</td>
+                                <td>{% translate "Other Character Name" %}</td>
+                                <td>{% translate "Details" %}</td>
+                                <td>{% translate "Timestamp" %}</td>
+                                <td>{% translate "ISK" %}</td>
+                            </tr>
+                            {% for event in events %}
+                                <tr>
+                                    <td>{{ event.recruit_name }}</td>
+                                    <td>{{ event.other_character_name }}</td>
+                                    <td>{{ event.details }}</td>
+                                    <td>{% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
+                                    <td>{% if event.isk_value != None %}{{ event.isk_value|floatformat:"2g" }}{% else %}-{% endif %}</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">{% translate "No events available." %}</p>
+                {% endif %}
             </div>
         </div>
     </div>

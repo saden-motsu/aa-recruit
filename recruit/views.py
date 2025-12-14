@@ -1,7 +1,10 @@
 """App Views"""
 
 # Standard Library
+from collections import defaultdict
 from collections.abc import Iterable
+from datetime import datetime
+from pprint import pprint
 from typing import Any
 from urllib.parse import quote
 
@@ -19,6 +22,9 @@ from django.shortcuts import render
 
 # Alliance Auth
 from allianceauth.authentication.models import UserProfile
+
+from .character_event import CharacterEvent
+from .character_event_converters import get_all_events
 
 
 def _get_main_characters() -> list[str, str]:
@@ -95,6 +101,22 @@ def _get_eve411_url(character_names: Iterable[str]) -> str | None:
     return f"https://www.eve411.com/local?pilots={sanitized_names}"
 
 
+def _group_character_events(
+    character_events: Iterable[CharacterEvent],
+) -> list[list[CharacterEvent]]:
+    grouped_events = defaultdict(list)
+
+    for character_event in character_events:
+        grouped_events[character_event.other_character_id].append(character_event)
+
+    for events in grouped_events.values():
+        events.sort(key=lambda x: (x.timestamp is None, x.timestamp or datetime.max))
+
+    result = list(grouped_events.values())
+    pprint(result)
+    return result
+
+
 @login_required
 @permission_required("recruit.basic_access")
 def index(request: WSGIRequest) -> HttpResponse:
@@ -110,6 +132,7 @@ def index(request: WSGIRequest) -> HttpResponse:
         selected_username = main_characters[0][0]
 
     user_characters = _get_user_characters(selected_username)
+    events = get_all_events(user_characters)
     character_names = _get_character_names(user_characters)
     context = {
         "main_characters": main_characters,
@@ -117,6 +140,7 @@ def index(request: WSGIRequest) -> HttpResponse:
         "user_characters": _map_character_attributes(user_characters),
         "blacklist_url": _get_blacklist_url(character_names),
         "eve411_url": _get_eve411_url(character_names),
+        "character_grouped_events": _group_character_events(events),
     }
 
     return render(request, "recruit/index.html", context)
