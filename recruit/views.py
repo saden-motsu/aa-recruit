@@ -112,7 +112,8 @@ def _group_character_events(
     results: list[tuple[str, str, list[CharacterEvent]]] = []
     for (character_id, character_name), character_events in grouped_events.items():
         character_events.sort(
-            key=lambda x: (x.timestamp is None, x.timestamp or datetime.max)
+            key=lambda x: (x.timestamp is None, x.timestamp or datetime.max),
+            reverse=True,
         )
         evewho = f"https://evewho.com/character/{character_id}"
         results.append((character_name, evewho, character_events))

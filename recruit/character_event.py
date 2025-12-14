@@ -18,6 +18,7 @@ class CharacterEvent:
     recruit_name: str
     other_character_id: int
     other_character_name: str
-    details: str = ""
+    summary: str | None = None
+    details: str | None = None
     timestamp: datetime | None = None
     isk_value: Decimal | None = None

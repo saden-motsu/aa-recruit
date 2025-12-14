@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # Standard Library
+import html
 from itertools import chain
 
 # Third Party
@@ -57,7 +58,7 @@ def _get_contact_events(character_query_set: CharacterQuerySet) -> list[Characte
                 recruit_name=character.name,
                 other_character_id=other.id,
                 other_character_name=other.name,
-                details=f"{other.name or str(other.id)}: Standings {character_contact.standing}",
+                summary=f"Standings {character_contact.standing:+}",
             )
         )
     return result
@@ -77,6 +78,7 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
     for character_mail in character_mails:
         mail_entities: list[MailEntity] = list(character_mail.recipients.all())
         mail_entities.append(character_mail.sender)
+        summary = f"Mail {character_mail.sender.name}->{";".join(x.name_plus for x in character_mail.recipients.all())}"
         for mail_entity in mail_entities:
             if mail_entity.id in character_ids:
                 continue
@@ -91,6 +93,7 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
                     recruit_name=character_mail.character.name,
                     other_character_id=mail_entity.id,
                     other_character_name=mail_entity.name,
+                    summary=summary,
                     details=_get_mail_details(character_mail),
                     timestamp=character_mail.timestamp,
                 )
@@ -130,20 +133,26 @@ def _get_character_contracts(
             return entity
         return None
 
-    def _contract_details(contract: CharacterContract) -> str:
+    def _contract_summary(contract: CharacterContract) -> str:
         parts: list[str] = []
-        parts.append(
-            f"{contract.summary()} ({contract.get_contract_type_display().title()})"
-        )
+        if summary := contract.summary():
+            parts.append(str(summary))
 
-        if title := contract.title:
-            parts.append(f"Info by Issuer:{title}")
+        if issuer := contract.issuer:
+            parts.append(f"Contractor:{issuer}")
+
         if availability := contract.get_availability_display():
             parts.append(
                 f"Availability:{availability.capitalize()} - {contract.assignee.name}"
             )
-        if issuer := contract.issuer:
-            parts.append(f"Contractor:{issuer}")
+
+        return "|".join(parts)
+
+    def _contract_details(contract: CharacterContract) -> str:
+        parts: list[str] = []
+
+        if title := contract.title:
+            parts.append(f"Info by Issuer:{html.escape(title)}")
         parts.append(f"Status:{contract.get_status_display().title()}")
 
         isk_fields = []
@@ -189,6 +198,7 @@ def _get_character_contracts(
                 recruit_name=contract.character.name,
                 other_character_id=other.id,
                 other_character_name=other.name,
+                summary=_contract_summary(contract),
                 details=_contract_details(contract),
                 timestamp=contract.date_completed
                 or contract.date_expired
@@ -231,12 +241,15 @@ def _get_wallet_journal_entries(
         ref_type_display = character_wallet_journal_entry.ref_type.replace(
             "_", " "
         ).title()
-        details = f"{ref_type_display}\n{character_wallet_journal_entry.description}"
+        summary = f"{ref_type_display}\n{character_wallet_journal_entry.description}"
+        details = ""
         if character_wallet_journal_entry.context_id:
             context_type = character_wallet_journal_entry.get_context_id_type_display()
-            details = f"{details}\nContext:{context_type} ({character_wallet_journal_entry.context_id})"
+            details += f"{details}\nContext:{context_type} ({character_wallet_journal_entry.context_id})"
         if character_wallet_journal_entry.reason:
-            details = f"{details}\nReason:{character_wallet_journal_entry.reason}"
+            details += f"{details}\nReason:{character_wallet_journal_entry.reason}"
+        if not details:
+            details = None
 
         events.append(
             CharacterEvent(
@@ -244,6 +257,7 @@ def _get_wallet_journal_entries(
                 recruit_name=character_wallet_journal_entry.character.name,
                 other_character_id=other.id,
                 other_character_name=other.name,
+                summary=summary,
                 details=details,
                 timestamp=character_wallet_journal_entry.date,
                 isk_value=character_wallet_journal_entry.amount,

@@ -42,18 +42,27 @@
                 <h3 class="mt-4">{% translate "Character Events" %}</h3>
                 {% if character_grouped_events %}
                     {% for character_name, evewho, character_events in character_grouped_events %}
-                        <details class="character_group">
-                            <summary><a href={{evewho}}>{{character_name}}</a></summary>
+                        <hr/>
+                        <details class="character_group" open>
+                            <summary><a href={{evewho}}>{{character_name}}</a> ({{character_events|length}})</summary>
                             {% for event in character_events %}
-                                <details>
-                                    <summary>
+                                {% if event.details %}
+                                    <details>
+                                        <summary>
+                                            {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
+                                            {% if event.summary %}{{ event.summary }}{% endif %}
+                                            {% if event.isk_value != None %} | {{ event.isk_value|floatformat:"2g" }} ISK{% endif %}
+                                        </summary>
+                                        {% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}
+                                    </details>
+                                {% else %}
+                                    <div>
                                         {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
                                         {{ event.recruit_name }}
                                         {% if event.isk_value != None %} | {{ event.isk_value|floatformat:"2g" }} ISK{% endif %}
                                         {% if event.summary %} | {{ event.summary }}{% endif %}
-                                    </summary>
-                                    {% if event.details %}{% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}{% endif %}
-                                </details>
+                                    </div>
+                                {% endif %}
                             {% endfor %}
                         </details>
                     {% endfor %}
@@ -73,8 +82,13 @@
     table.simple th, td {
         border: 1px solid black;
     }
-    details.character_group details {
+    details.character_group details, details.character_group div {
+        margin-top: 1px;
         margin-left: 10px;
+        border-left: 3px solid lightgray;
+        border-top: 1px solid black;
+        border-bottom: 1px solid black;
+        padding-left: 2px;
     }
 </style>
 {% endblock %}
