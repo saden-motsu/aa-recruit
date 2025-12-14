@@ -102,18 +102,21 @@ def _get_eve411_url(character_names: Iterable[str]) -> str | None:
 
 def _group_character_events(
     character_events: Iterable[CharacterEvent],
-) -> list[tuple[str, list[CharacterEvent]]]:
+) -> list[tuple[str, list[dict]]]:
     grouped_events = defaultdict(list)
 
     for character_event in character_events:
-        grouped_events[character_event.other_character_name].append(character_event)
+        grouped_events[
+            (character_event.other_character_id, character_event.other_character_name)
+        ].append(character_event)
 
-    results: list[tuple[str, list[CharacterEvent]]] = []
-    for character_name, character_events in grouped_events.items():
+    results: list[tuple[str, str, list[CharacterEvent]]] = []
+    for (character_id, character_name), character_events in grouped_events.items():
         character_events.sort(
             key=lambda x: (x.timestamp is None, x.timestamp or datetime.max)
         )
-        results.append((character_name, character_events))
+        evewho = f"https://evewho.com/character/{character_id}"
+        results.append((character_name, evewho, character_events))
 
     return results
 

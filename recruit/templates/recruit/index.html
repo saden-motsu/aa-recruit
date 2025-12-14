@@ -41,8 +41,8 @@
                 </table>
                 <h3 class="mt-4">{% translate "Character Events" %}</h3>
                 {% if character_grouped_events %}
-                    {% for character_name, character_events in character_grouped_events %}
-                        <h5 class="mt-3">{{character_name}}</h5>
+                    {% for character_name, evewho, character_events in character_grouped_events %}
+                        <h5 class="mt-3"><a href={{evewho}}>{{character_name}}</a></h5>
                         <table class="mb-3">
                             <tr>
                                 <td>{% translate "Recruit" %}</td>
