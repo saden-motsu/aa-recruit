@@ -42,9 +42,9 @@
                 <h3 class="mt-4">{% translate "Character Events" %}</h3>
                 <details open>
                     {% if character_grouped_events %}
-                        {% for character_name, evewho, character_events in character_grouped_events %}
+                        {% for other_character, character_events in character_grouped_events %}
                             <hr/>
-                            <h4 class="mt-3"><a href={{evewho}}>{{character_name}}</a> ({{character_events|length}})</h3>
+                            <h4 class="mt-3"><a href="https://evewho.com/character/{{other_character.id}}">{{other_character.name}}</a> ({{character_events|length}})</h4>
                             {% for event in character_events %}
                                 {% if event.details %}
                                     <details class="event">

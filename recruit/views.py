@@ -49,6 +49,8 @@ def _map_character_attributes(
     keymap: dict[str, str] = {
         "eve_character__character_id": "id",
         "eve_character__character_name": "name",
+        "eve_character__corporation_id": "corporation_id",
+        "eve_character__alliance_id": "alliance_id",
         "wallet_balance__total": "wallet_isk",
         "skillpoints__total": "total_sp",
     }
@@ -99,24 +101,29 @@ def _get_eve411_url(character_names: Iterable[str]) -> str | None:
     return f"https://www.eve411.com/local?pilots={sanitized_names}"
 
 
+GroupedCharacterEvents = list[tuple[dict, list[CharacterEvent]]]
+
+
 def _group_character_events(
     character_events: Iterable[CharacterEvent],
-) -> list[tuple[str, list[dict]]]:
+) -> GroupedCharacterEvents:
     grouped_events = defaultdict(list)
 
     for character_event in character_events:
-        grouped_events[
-            (character_event.other_character_id, character_event.other_character_name)
-        ].append(character_event)
+        grouped_events[character_event.other_entity].append(character_event)
 
-    results: list[tuple[str, str, list[CharacterEvent]]] = []
-    for (character_id, character_name), character_events in grouped_events.items():
+    results: GroupedCharacterEvents = []
+    for other_entity, character_events in grouped_events.items():
         character_events.sort(
             key=lambda x: (x.timestamp is None, x.timestamp or datetime.max),
             reverse=True,
         )
-        evewho = f"https://evewho.com/character/{character_id}"
-        results.append((character_name, evewho, character_events))
+
+        other_character_dict = {
+            "id": other_entity.id,
+            "name": other_entity.name,
+        }
+        results.append((other_character_dict, character_events))
 
     return results
 

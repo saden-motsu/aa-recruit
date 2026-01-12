@@ -5,6 +5,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
+# Alliance Auth
+from allianceauth.eveonline.models import EveCharacter
+
+# Alliance Auth (External Libs)
+from eveuniverse.models import EveEntity
+
 
 @dataclass(slots=True, order=True, frozen=True)
 class CharacterEvent:
@@ -14,10 +20,8 @@ class CharacterEvent:
     financial context. Details is a human-readable summary of the event.
     """
 
-    recruit_id: int
-    recruit_name: str
-    other_character_id: int
-    other_character_name: str
+    recruit: EveCharacter
+    other_entity: EveEntity
     summary: str | None = None
     details: str | None = None
     timestamp: datetime | None = None

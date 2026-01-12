@@ -63,10 +63,8 @@ def _get_contact_events(character_query_set: CharacterQuerySet) -> list[Characte
 
         result.append(
             CharacterEvent(
-                recruit_id=character.id,
-                recruit_name=character.name,
-                other_character_id=other.id,
-                other_character_name=other.name,
+                recruit=character,
+                other_entity=other,
                 summary=f"Standings {character_contact.standing:+}",
             )
         )
@@ -98,10 +96,8 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
 
             result.append(
                 CharacterEvent(
-                    recruit_id=character_mail.character.id,
-                    recruit_name=character_mail.character.name,
-                    other_character_id=mail_entity.id,
-                    other_character_name=mail_entity.name,
+                    recruit=character_mail.character,
+                    other_entity=EveEntity.objects.get(pk=mail_entity.id),
                     summary=summary,
                     details=_get_mail_details(character_mail),
                     timestamp=character_mail.timestamp,
@@ -206,10 +202,8 @@ def _get_character_contracts(
         isk_value = _isk_value(contract)
         events.append(
             CharacterEvent(
-                recruit_id=contract.character.id,
-                recruit_name=contract.character.name,
-                other_character_id=other.id,
-                other_character_name=other.name,
+                recruit=contract.character,
+                other_entity=other,
                 summary=_contract_summary(contract),
                 details=_contract_details(contract, isk_value),
                 timestamp=contract.date_completed
@@ -269,10 +263,8 @@ def _get_wallet_journal_entries(
 
         events.append(
             CharacterEvent(
-                recruit_id=character_wallet_journal_entry.character.id,
-                recruit_name=character_wallet_journal_entry.character.name,
-                other_character_id=other.id,
-                other_character_name=other.name,
+                recruit=character_wallet_journal_entry.character,
+                other_entity=other,
                 summary=summary,
                 details=details,
                 timestamp=character_wallet_journal_entry.date,
@@ -335,10 +327,8 @@ def _get_wallet_transactions(
 
         events.append(
             CharacterEvent(
-                recruit_id=transaction.character.id,
-                recruit_name=transaction.character.name,
-                other_character_id=other.id,
-                other_character_name=other.name,
+                recruit=transaction.character,
+                other_entity=other,
                 summary=summary,
                 details=details,
                 timestamp=transaction.date,
