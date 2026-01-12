@@ -50,6 +50,7 @@
                                     <details class="event">
                                         <summary>
                                             {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
+                                            {{ event.recruit.name }}
                                             {% if event.summary %}{{ event.summary }}{% endif %}
                                             {% if event.isk_value != None %} | {{ event.isk_value|floatformat:"2g" }} ISK{% endif %}
                                         </summary>
@@ -58,7 +59,7 @@
                                 {% else %}
                                     <div class="event">
                                         {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
-                                        {{ event.recruit_name }}
+                                        {{ event.recruit.name }}
                                         {% if event.isk_value != None %} | {{ event.isk_value|floatformat:"2g" }} ISK{% endif %}
                                         {% if event.summary %} | {{ event.summary }}{% endif %}
                                     </div>
