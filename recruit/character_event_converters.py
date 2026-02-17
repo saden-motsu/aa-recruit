@@ -94,6 +94,9 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
                 if EveEntity.is_npc_id(mail_entity.id):
                     continue
 
+            if mail_entity not in MailEntity.Category.eve_entity_compatible():
+                continue
+
             result.append(
                 CharacterEvent(
                     recruit=character_mail.character,
@@ -147,9 +150,8 @@ def _get_character_contracts(
             parts.append(f"Contractor:{issuer}")
 
         if availability := contract.get_availability_display():
-            parts.append(
-                f"Availability:{availability.capitalize()} - {contract.assignee.name}"
-            )
+            assignee_name = contract.assignee.name if contract.assignee else "None"
+            parts.append(f"Availability:{availability.capitalize()} - {assignee_name}")
 
         return "|".join(parts)
 
@@ -295,7 +297,7 @@ def _get_wallet_transactions(
         return client
 
     def _ratio(tx: CharacterWalletTransaction) -> Decimal | None:
-        market_price = tx.eve_type.market_price.average_price
+        market_price = tx.unit_price
         if market_price is None or market_price <= 0:
             return None
         try:
