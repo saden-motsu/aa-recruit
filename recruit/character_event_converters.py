@@ -247,7 +247,7 @@ def _get_wallet_journal_entries(
             continue
 
         ref_type = character_wallet_journal_entry.ref_type
-        if ref_type != "player_donation":
+        if ref_type not in {"player_donation", "player_trading"}:
             continue
 
         ref_type_display = character_wallet_journal_entry.ref_type.replace(
