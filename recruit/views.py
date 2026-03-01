@@ -37,7 +37,7 @@ def _get_main_characters() -> list[str, str]:
     return (
         UserProfile.objects.exclude(main_character__isnull=True)
         .order_by("user__date_joined")
-        .values_list("user__username", "main_character__character_name")
+        .values_list("user__username", "main_character__character_name", "state__name")
     )
 
 

@@ -10,9 +10,9 @@
                 <form method="GET" id="user_id_selection">
                     <select id="selected_username" name="selected_username" class="form-select" onchange="this.form.submit()">
                         {% if main_characters %}
-                            {% for user_id, character_name in main_characters %}
+                            {% for user_id, character_name, state_name in main_characters %}
                                 <option value="{{ user_id }}" {% if user_id == selected_username %} selected{% endif %}>
-                                    {{ character_name }}
+                                    {{ character_name }} ({{ state_name }})
                                 </option>
                             {% endfor %}
                         {% else %}
