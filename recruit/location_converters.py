@@ -20,7 +20,7 @@ from eveuniverse.models import EveSolarSystem, EveType
 
 class LocationInformation:
     def __init__(self):
-        self.clone_implants: list[list[EveType]] | None = None
+        self.clone_implants: dict[Character, list[EveType]] | None = None
         self.transactions: list[CharacterWalletTransaction] = []
         self.contracts: set[CharacterContract] = set()
         self.assets: list[CharacterAsset] = []
@@ -75,18 +75,18 @@ def get_system_interaction_information(
             character.location
         ):
             if location_information.clone_implants is None:
-                location_information.clone_implants = []
-            location_information.clone_implants.append(
-                [x.eve_type for x in character.implants.all()]
-            )
+                location_information.clone_implants = {}
+            location_information.clone_implants[character] = [
+                x.eve_type for x in character.implants.all()
+            ]
 
         for jump_clone in character.jump_clones.all():
             if location_information := get_location_information(jump_clone.location):
                 if location_information.clone_implants is None:
-                    location_information.clone_implants = []
-                location_information.clone_implants.append(
-                    [x.eve_type for x in jump_clone.implants.all()]
-                )
+                    location_information.clone_implants = {}
+                location_information.clone_implants[jump_clone.character] = [
+                    x.eve_type for x in jump_clone.implants.all()
+                ]
 
         for wallet_transaction in character.wallet_transactions.all():
             get_location_information(wallet_transaction.location).transactions.append(

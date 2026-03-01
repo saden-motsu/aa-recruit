@@ -80,11 +80,44 @@
                                 {% for system, system_information in system_grouped_information.items %}
                                     <details open class="system">
                                         <summary><a href="{{ system.profile_url }}">({{system.security_status|floatformat:2}}) {{ system.name }}</a></summary>
-                                        {% for planet in system_information.planets %}
-                                            <div>{{ planet }}</div>
-                                        {% endfor %}
+                                        {% if system_information.mining_ledger_entries %}
+                                            <div>Mining Ledger Entries: {{ system_information.mining_ledger_entries|length }}</div>
+                                        {% endif %}
+                                        {%  if system_information.planets %}
+                                            <div>PI Planets: {{ system_information.planets|length }}</div>
+                                        {% endif %}
                                         {% for character in system_information.characters_in_space %}
-                                            <div>{{ character }}</div>
+                                            <div>'{{ character }}'' in space</div>
+                                        {% endfor %}
+                                        {% for location, location_information in system_information.location_information.items %}
+                                            <details open class="location">
+                                                <summary>{{ location.name_plus }}</summary>
+                                                {% if location_information.clone_implants %}
+                                                    <div>Clones:</div>
+                                                    <ul>
+                                                        {% for character, implants in location_information.clone_implants.items %}
+                                                            <li>
+                                                                {{ character.name }}
+                                                                {% if location.is_solar_system %}in space.{% endif %}
+                                                                <ul>
+                                                                    {% for implant in implants %}
+                                                                        <li><a href="{{ implant.profile_url }}" target="_blank">{{ implant.name }}</a></li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% endif %}
+                                                {% if location_information.transactions %}
+                                                    <div>Transactions: {{ location_information.transactions|length }}</div>
+                                                {% endif %}
+                                                {% if location_information.contracts %}
+                                                    <div>Contracts: {{ location_information.contracts|length }}</div>
+                                                {% endif %}
+                                                {% if location_information.assets %}
+                                                    <div>Assets: {{ location_information.assets|length }}</div>
+                                                {% endif %}
+                                            </details>
                                         {% endfor %}
                                     </details>
                                 {% endfor %}
@@ -113,7 +146,7 @@
         border-bottom: 1px solid black;
         padding-left: 2px;
     }
-    .region, .constellation, .system {
+    .region, .constellation, .system, .location {
         margin-top: 1em;
         margin-left: 10px;
         border-left: 1px solid black;
