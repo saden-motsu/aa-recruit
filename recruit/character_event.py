@@ -15,9 +15,7 @@ from eveuniverse.models import EveEntity
 @dataclass(slots=True, order=True, frozen=True)
 class CharacterEvent:
     """
-    Represents an interaction involving a recruit and another character. Timestamp
-    and ISK value are optional because not every event will carry temporal or
-    financial context. Details is a human-readable summary of the event.
+    Represents an interaction involving a recruit and another character.
     """
 
     recruit: EveCharacter

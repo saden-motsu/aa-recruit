@@ -21,8 +21,12 @@ from django.shortcuts import render
 # Alliance Auth
 from allianceauth.authentication.models import UserProfile
 
+# Alliance Auth (External Libs)
+from eveuniverse.models import EveConstellation, EveRegion, EveSolarSystem
+
 from .character_event import CharacterEvent
 from .character_event_converters import get_all_events
+from .location_converters import get_system_interaction_information
 
 
 def _get_main_characters() -> list[str, str]:
@@ -128,6 +132,25 @@ def _group_character_events(
     return results
 
 
+def _get_region_grouped_information(user_characters):
+    system_interaction_information = get_system_interaction_information(user_characters)
+
+    region_constellation_system_information: dict[
+        EveRegion, dict[EveConstellation, dict[EveSolarSystem, Any]]
+    ] = {}
+
+    for system, info in system_interaction_information.items():
+        constellation = system.eve_constellation
+        region = constellation.eve_region
+        if region not in region_constellation_system_information:
+            region_constellation_system_information[region] = {}
+        if constellation not in region_constellation_system_information[region]:
+            region_constellation_system_information[region][constellation] = {}
+        region_constellation_system_information[region][constellation][system] = info
+
+    return region_constellation_system_information
+
+
 @login_required
 @permission_required("recruit.basic_access")
 def index(request: WSGIRequest) -> HttpResponse:
@@ -139,8 +162,11 @@ def index(request: WSGIRequest) -> HttpResponse:
 
     selected_username = request.GET.get("selected_username")
     main_characters = _get_main_characters()
-    if selected_username is None and main_characters:
-        selected_username = main_characters[0][0]
+    if selected_username is None:
+        if main_characters and main_characters[0]:
+            selected_username = main_characters[0][0]
+        else:
+            return
 
     user_characters = _get_user_characters(selected_username)
     events = get_all_events(user_characters)
@@ -152,6 +178,7 @@ def index(request: WSGIRequest) -> HttpResponse:
         "blacklist_url": _get_blacklist_url(character_names),
         "eve411_url": _get_eve411_url(character_names),
         "character_grouped_events": _group_character_events(events),
+        "region_grouped_information": _get_region_grouped_information(user_characters),
     }
 
     return render(request, "recruit/index.html", context)

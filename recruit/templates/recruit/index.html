@@ -40,8 +40,9 @@
                     {% endfor %}
                 </table>
                 <h3 class="mt-4">{% translate "Character Events" %}</h3>
-                <details open>
+                <details closed>
                     {% if character_grouped_events %}
+                        <summary>{% translate "Character Grouped Events" %}</summary>
                         {% for other_character, character_events in character_grouped_events %}
                             <hr/>
                             <h4 class="mt-3"><a href="https://evewho.com/character/{{other_character.id}}">{{other_character.name}}</a> ({{character_events|length}})</h4>
@@ -70,6 +71,29 @@
                         <p class="text-muted">{% translate "No events available." %}</p>
                     {% endif %}
                 </details>
+                {% if region_grouped_information %}
+                    <details open><summary>Location Grouped Information</summary>
+                        {% for region, constellation_grouped_information in region_grouped_information.items %}
+                            <details open class="region"><summary><a href="{{ region.profile_url }}">{{ region.name }}</a></summary>
+                            {% for constellation, system_grouped_information in constellation_grouped_information.items %}
+                                <details open class="constellation"><summary>{{ constellation.name }}</summary>
+                                {% for system, system_information in system_grouped_information.items %}
+                                    <details open class="system">
+                                        <summary><a href="{{ system.profile_url }}">({{system.security_status|floatformat:2}}) {{ system.name }}</a></summary>
+                                        {% for planet in system_information.planets %}
+                                            <div>{{ planet }}</div>
+                                        {% endfor %}
+                                        {% for character in system_information.characters_in_space %}
+                                            <div>{{ character }}</div>
+                                        {% endfor %}
+                                    </details>
+                                {% endfor %}
+                                </details>
+                            {% endfor %}
+                            </details>
+                        {% endfor %}
+                    </details>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -88,6 +112,12 @@
         margin-left: 10px;
         border-bottom: 1px solid black;
         padding-left: 2px;
+    }
+    .region, .constellation, .system {
+        margin-top: 1em;
+        margin-left: 10px;
+        border-left: 1px solid black;
+        padding-left: 5px;
     }
 </style>
 {% endblock %}
