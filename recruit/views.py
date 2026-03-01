@@ -153,7 +153,7 @@ def _get_region_grouped_information(user_characters):
 
 
 @login_required
-@permission_required("recruit.basic_access")
+@permission_required("memberaudit.finder_access")
 def index(request: WSGIRequest) -> HttpResponse:
     """
     Index view
