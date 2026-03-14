@@ -1,4 +1,6 @@
 # Standard Library
+import logging
+import time
 from collections import defaultdict
 
 # Third Party
@@ -13,6 +15,9 @@ from memberaudit.models import (
     CharacterWalletTransaction,
     Location,
 )
+
+# Django
+from django.db import connection
 
 # Alliance Auth (External Libs)
 from eveuniverse.models import EveSolarSystem, EveType
@@ -40,6 +45,42 @@ class SystemInformation:
 def get_system_interaction_information(
     character_query_set: CharacterQuerySet,
 ) -> dict[EveSolarSystem, SystemInformation]:
+    """Gather per-system interaction data for a set of characters.
+
+    This iterates every character in ``character_query_set`` and collects
+    mining ledger entries, planets, assets, contracts, wallet transactions,
+    etc.  It automatically prefetches related data and logs metrics including
+    query count and execution time.
+
+    Args:
+        character_query_set: queryset of ``Character`` instances.
+
+    Returns:
+        mapping from ``EveSolarSystem`` to ``SystemInformation``.
+
+    The caller can also profile this function with ``cProfile`` or the
+    Django Debug Toolbar – see the project README for tips on performance
+    debugging.
+    """
+
+    logger = logging.getLogger(__name__)
+
+    # prefetch related data to avoid N+1 query problems
+    character_query_set = character_query_set.select_related(
+        "clone_info__home_location__eve_solar_system",
+        "location__eve_solar_system",
+    ).prefetch_related(
+        "implants",
+        "jump_clones__location__eve_solar_system",
+        "jump_clones__implants",
+        "wallet_transactions__location__eve_solar_system",
+        "contracts__start_location__eve_solar_system",
+        "contracts__end_location__eve_solar_system",
+        "assets__location__eve_solar_system",
+        "mining_ledger__eve_solar_system",
+        "planets__eve_planet__eve_solar_system",
+    )
+
     system_information: dict[EveSolarSystem, SystemInformation] = defaultdict(
         SystemInformation
     )
@@ -63,7 +104,11 @@ def get_system_interaction_information(
             ]
         return None
 
+    start_qs = len(connection.queries)
+    all_character_start = time.perf_counter()
     for character in character_query_set:
+        character_start = time.perf_counter()
+
         if character.clone_info and (
             location_information := get_location_information(
                 character.clone_info.home_location
@@ -115,5 +160,18 @@ def get_system_interaction_information(
                 system_information[planet.eve_planet.eve_solar_system].planets.append(
                     planet
                 )
+
+        logger.debug(
+            "processed character %s in %.3f sec",
+            character,
+            time.perf_counter() - character_start,
+        )
+
+    total = time.perf_counter() - all_character_start
+    end_qs = len(connection.queries)
+    logger.debug(
+        "get_system_interaction_information executed %d DB queries", end_qs - start_qs
+    )
+    logger.debug("get_system_interaction_information total time %.3f sec", total)
 
     return system_information
