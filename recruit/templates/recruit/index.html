@@ -74,17 +74,27 @@
                 {% if region_grouped_information %}
                     <details open><summary>Location Grouped Information</summary>
                         {% for region, constellation_grouped_information in region_grouped_information.items %}
-                            <details open class="region"><summary><a href="{{ region.profile_url }}">{{ region.name }}</a></summary>
+                            <details closed class="region"><summary><a href="{{ region.profile_url }}">{{ region.name }}</a></summary>
                             {% for constellation, system_grouped_information in constellation_grouped_information.items %}
                                 <details open class="constellation"><summary>{{ constellation.name }}</summary>
                                 {% for system, system_information in system_grouped_information.items %}
                                     <details open class="system">
                                         <summary><a href="{{ system.profile_url }}">({{system.security_status|floatformat:2}}) {{ system.name }}</a></summary>
                                         {% if system_information.mining_ledger_entries %}
-                                            <div>Mining Ledger Entries: {{ system_information.mining_ledger_entries|length }}</div>
+                                            <details closed>
+                                                <summary>Ledger Entries: {{ system_information.mining_ledger_entries|length }}</summary>
+                                                {% for entry in system_information.mining_ledger_entries %}
+                                                    <div>{{ entry }}</div>
+                                                {% endfor %}
+                                            </details>
                                         {% endif %}
                                         {%  if system_information.planets %}
-                                            <div>PI Planets: {{ system_information.planets|length }}</div>
+                                            <details closed>
+                                                <summary>PI Planets: {{ system_information.planets|length }}</summary>
+                                                {% for planet in system_information.planets %}
+                                                    <div>{{ planet.name }} ({{ planet.type_name }})</div>
+                                                {% endfor %}
+                                            </details>
                                         {% endif %}
                                         {% for character in system_information.characters_in_space %}
                                             <div>'{{ character }}'' in space</div>
@@ -109,13 +119,28 @@
                                                     </ul>
                                                 {% endif %}
                                                 {% if location_information.transactions %}
-                                                    <div>Transactions: {{ location_information.transactions|length }}</div>
+                                                    <details closed>
+                                                        <summary>Transactions: {{ location_information.transactions|length }}</summary>
+                                                        {% for transaction in location_information.transactions %}
+                                                            <div>{{ transaction }}</div>
+                                                        {% endfor %}
+                                                    </details>
                                                 {% endif %}
                                                 {% if location_information.contracts %}
-                                                    <div>Contracts: {{ location_information.contracts|length }}</div>
+                                                    <details closed>
+                                                        <summary>Contracts: {{ location_information.contracts|length }}</summary>
+                                                        {% for contract in location_information.contracts %}
+                                                            <div>{{ contract }}</div>
+                                                        {% endfor %}
+                                                    </details>
                                                 {% endif %}
                                                 {% if location_information.assets %}
-                                                    <div>Assets: {{ location_information.assets|length }}</div>
+                                                    <details closed>
+                                                        <summary>Assets: {{ location_information.assets|length }}</summary>
+                                                        {% for asset in location_information.assets %}
+                                                            <div>{{ asset.character.name }} | {{ asset.name_display }} | {{ asset.quantity }}x | {{ asset.eve_type.market_price.average_price|floatformat:"2g" }} ISK each</div>
+                                                        {% endfor %}
+                                                    </details>
                                                 {% endif %}
                                             </details>
                                         {% endfor %}
@@ -146,7 +171,7 @@
         border-bottom: 1px solid black;
         padding-left: 2px;
     }
-    .region, .constellation, .system, .location {
+    .region, .constellation, .system, .location, .location *{
         margin-top: 1em;
         margin-left: 10px;
         border-left: 1px solid black;
