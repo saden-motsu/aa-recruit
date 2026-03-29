@@ -85,8 +85,11 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
     for character_mail in character_mails:
         mail_entities: list[MailEntity] = list(character_mail.recipients.all())
         mail_entities.append(character_mail.sender)
+        sender_name = ""
+        if character_mail.sender:
+            sender_name = character_mail.sender.name_plus
         recipients = ";".join(x.name_plus for x in character_mail.recipients.all())
-        summary = f"Mail {character_mail.sender.name}->{recipients}"
+        summary = f"Mail {sender_name}->{recipients}"
         for mail_entity in mail_entities:
             if mail_entity.id in character_ids:
                 continue
