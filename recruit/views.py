@@ -110,6 +110,7 @@ GroupedCharacterEvents = list[tuple[dict, list[CharacterEvent]]]
 
 def _group_character_events(
     character_events: Iterable[CharacterEvent],
+    user_characters: CharacterQuerySet,
 ) -> GroupedCharacterEvents:
     grouped_events = defaultdict(list)
 
@@ -118,6 +119,11 @@ def _group_character_events(
 
     results: GroupedCharacterEvents = []
     for other_entity, character_events in grouped_events.items():
+        if other_entity.id in user_characters.values_list(
+            "eve_character__character_id", flat=True
+        ):
+            continue
+
         character_events.sort(
             key=lambda x: (x.timestamp is None, x.timestamp or datetime.max),
             reverse=True,
@@ -178,7 +184,7 @@ def index(request: WSGIRequest) -> HttpResponse:
         "user_characters": _map_character_attributes(user_characters),
         "blacklist_url": _get_blacklist_url(character_names),
         "eve411_url": _get_eve411_url(character_names),
-        "character_grouped_events": _group_character_events(events),
+        "character_grouped_events": _group_character_events(events, user_characters),
         "region_grouped_information": _get_region_grouped_information(user_characters),
     }
 
