@@ -27,7 +27,7 @@ class RecruitMenuItem(MenuItemHook):
     def render(self, request):
         """Render the menu item"""
 
-        if request.user.has_perm("recruit.basic_access"):
+        if request.user.has_perm("memberaudit.finder_access"):
             return MenuItemHook.render(self, request)
 
         return ""
