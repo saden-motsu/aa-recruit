@@ -24,6 +24,7 @@ from django.db.models import F, FloatField, Sum
 from eveuniverse.models import EveEntity
 
 from .character_event import CharacterEvent
+from .interaction import Interaction
 
 
 def get_all_events(character_query_set: CharacterQuerySet) -> list[CharacterEvent]:
@@ -43,6 +44,17 @@ def get_all_events(character_query_set: CharacterQuerySet) -> list[CharacterEven
             wallet_events,
             wallet_transaction_events,
         )
+    )
+
+
+def _interaction_to_character_event(interaction: Interaction) -> CharacterEvent:
+    return CharacterEvent(
+        recruit=interaction.recruit,
+        other_entity=interaction.other_entity,
+        summary=interaction.summary,
+        details=interaction.details,
+        timestamp=interaction.timestamp,
+        isk_value=interaction.isk_value,
     )
 
 
@@ -83,9 +95,10 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
     )
     mail_recipients = _get_mail_recipients(character_mails)
     entities_by_id = _get_mail_entities(character_mails, mail_recipients)
-    return _build_mail_events(
+    interactions = _build_mail_events(
         character_mails, mail_recipients, entities_by_id, character_ids
     )
+    return [_interaction_to_character_event(x) for x in interactions]
 
 
 def _get_mail_recipients(
@@ -114,8 +127,8 @@ def _build_mail_events(
     mail_recipients: dict[int, list[MailEntity]],
     entities_by_id: dict[int, EveEntity],
     character_ids: set[int],
-) -> list[CharacterEvent]:
-    result: list[CharacterEvent] = []
+) -> list[Interaction]:
+    result: list[Interaction] = []
     for character_mail in character_mails:
         recipients = mail_recipients[character_mail.pk]
         summary = _get_mail_summary(character_mail, recipients)
@@ -129,9 +142,10 @@ def _build_mail_events(
                 continue
 
             result.append(
-                CharacterEvent(
+                Interaction(
                     recruit=character_mail.character,
                     other_entity=other_entity,
+                    kind="mail",
                     summary=summary,
                     details=details,
                     timestamp=character_mail.timestamp,
