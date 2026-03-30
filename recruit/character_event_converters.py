@@ -17,6 +17,7 @@ from memberaudit.models import (
 from memberaudit.models.general import MailEntity
 
 # Django
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, FloatField, Sum
 
 # Alliance Auth (External Libs)
@@ -301,7 +302,10 @@ def _get_wallet_transactions(
         return client
 
     def _ratio(tx: CharacterWalletTransaction) -> Decimal | None:
-        market_price = tx.unit_price
+        try:
+            market_price = tx.eve_type.market_price.average_price
+        except ObjectDoesNotExist:
+            return None
         if market_price is None or market_price <= 0:
             return None
         try:
