@@ -73,41 +73,67 @@ def _get_contact_events(character_query_set: CharacterQuerySet) -> list[Characte
 
 
 def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEvent]:
-    character_mails = (
+    character_mails = list(
         CharacterMail.objects.filter(character__in=character_query_set)
         .select_related("sender")
         .prefetch_related("recipients")
     )
-
-    result: list[CharacterEvent] = []
     character_ids = set(
         character_query_set.values_list("eve_character__character_id", flat=True)
     )
+    mail_recipients = _get_mail_recipients(character_mails)
+    entities_by_id = _get_mail_entities(character_mails, mail_recipients)
+    return _build_mail_events(
+        character_mails, mail_recipients, entities_by_id, character_ids
+    )
+
+
+def _get_mail_recipients(
+    character_mails: list[CharacterMail],
+) -> dict[int, list[MailEntity]]:
+    return {
+        character_mail.pk: list(character_mail.recipients.all())
+        for character_mail in character_mails
+    }
+
+
+def _get_mail_entities(
+    character_mails: list[CharacterMail],
+    mail_recipients: dict[int, list[MailEntity]],
+) -> dict[int, EveEntity]:
+    entity_ids: set[int] = set()
     for character_mail in character_mails:
-        mail_entities: list[MailEntity] = list(character_mail.recipients.all())
-        mail_entities.append(character_mail.sender)
-        sender_name = ""
+        entity_ids.update(entity.id for entity in mail_recipients[character_mail.pk])
         if character_mail.sender:
-            sender_name = character_mail.sender.name_plus
-        recipients = ";".join(x.name_plus for x in character_mail.recipients.all())
-        summary = f"Mail {sender_name}->{recipients}"
-        for mail_entity in mail_entities:
-            if mail_entity.id in character_ids:
+            entity_ids.add(character_mail.sender.id)
+    return EveEntity.objects.in_bulk(entity_ids)
+
+
+def _build_mail_events(
+    character_mails: list[CharacterMail],
+    mail_recipients: dict[int, list[MailEntity]],
+    entities_by_id: dict[int, EveEntity],
+    character_ids: set[int],
+) -> list[CharacterEvent]:
+    result: list[CharacterEvent] = []
+    for character_mail in character_mails:
+        recipients = mail_recipients[character_mail.pk]
+        summary = _get_mail_summary(character_mail, recipients)
+        details = _get_mail_details(character_mail, recipients)
+        for mail_entity in _iter_mail_entities(character_mail, recipients):
+            if not _is_relevant_mail_entity(mail_entity, character_ids):
                 continue
 
-            if mail_entity.category == MailEntity.Category.CHARACTER:
-                if EveEntity.is_npc_id(mail_entity.id):
-                    continue
-
-            if mail_entity.category not in MailEntity.Category.eve_entity_compatible():
+            other_entity = entities_by_id.get(mail_entity.id)
+            if other_entity is None:
                 continue
 
             result.append(
                 CharacterEvent(
                     recruit=character_mail.character,
-                    other_entity=EveEntity.objects.get(pk=mail_entity.id),
+                    other_entity=other_entity,
                     summary=summary,
-                    details=_get_mail_details(character_mail),
+                    details=details,
                     timestamp=character_mail.timestamp,
                 )
             )
@@ -115,10 +141,43 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
     return result
 
 
-def _get_mail_details(character_mail: CharacterMail) -> str:
+def _iter_mail_entities(
+    character_mail: CharacterMail, recipients: list[MailEntity]
+) -> list[MailEntity]:
+    entities = list(recipients)
+    if character_mail.sender:
+        entities.append(character_mail.sender)
+    return entities
+
+
+def _is_relevant_mail_entity(mail_entity: MailEntity, character_ids: set[int]) -> bool:
+    if mail_entity.id in character_ids:
+        return False
+
+    if mail_entity.category == MailEntity.Category.CHARACTER and EveEntity.is_npc_id(
+        mail_entity.id
+    ):
+        return False
+
+    return mail_entity.category in MailEntity.Category.eve_entity_compatible()
+
+
+def _get_mail_summary(
+    character_mail: CharacterMail, recipients: list[MailEntity]
+) -> str:
+    sender_name = character_mail.sender.name_plus if character_mail.sender else ""
+    recipient_names = ";".join(x.name_plus for x in recipients)
+    return f"Mail {sender_name}->{recipient_names}"
+
+
+def _get_mail_details(
+    character_mail: CharacterMail, recipients: list[MailEntity] | None = None
+) -> str:
+    if recipients is None:
+        recipients = list(character_mail.recipients.all())
     return f"""{"" if character_mail.is_read else "Unread:"}Subject:{character_mail.subject}
 From:{character_mail.sender.name_plus}
-To:{",".join(x.name_plus for x in character_mail.recipients.all())}
+To:{",".join(x.name_plus for x in recipients)}
 {character_mail.body_html}
 """
 
