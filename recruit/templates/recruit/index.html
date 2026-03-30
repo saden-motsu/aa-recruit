@@ -33,9 +33,9 @@
                     {% for character in user_characters %}
                         <tr>
                             <td><a href="https://evewho.com/character/{{character.id}}" target="_blank">{{character.name}}</a></td>
-                            <td>{{character.total_sp|intcomma}}</td>
-                            <td>{{character.wallet_isk|floatformat:"2g"}}</td>
-                            <td>{{character.asset_value|floatformat:"2g"}}</td>
+                            <td class="text-end">{{character.total_sp|intcomma}}</td>
+                            <td class="text-end">{{character.wallet_isk|floatformat:"2g"}}</td>
+                            <td class="text-end">{{character.asset_value|floatformat:"2g"}}</td>
                         </tr>
                     {% endfor %}
                 </table>
