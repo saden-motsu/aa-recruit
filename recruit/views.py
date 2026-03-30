@@ -29,14 +29,14 @@ from .character_event_converters import get_all_events
 from .location_converters import get_system_interaction_information
 
 
-def _get_main_characters() -> list[str, str]:
+def _get_main_characters() -> list[str, str, str]:
     """
     Gets a list of all main character names.
     """
 
     return (
         UserProfile.objects.exclude(main_character__isnull=True)
-        .order_by("user__date_joined")
+        .order_by("-user__date_joined")
         .values_list("user__username", "main_character__character_name", "state__name")
     )
 
@@ -44,7 +44,7 @@ def _get_main_characters() -> list[str, str]:
 def _get_user_characters(selected_username: str | None) -> CharacterQuerySet:
     return Character.objects.filter(
         eve_character__character_ownership__user__username=selected_username
-    ).order_by("skillpoints__total")
+    ).order_by("-skillpoints__total")
 
 
 def _map_character_attributes(
