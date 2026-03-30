@@ -98,7 +98,7 @@ def _get_mail_events(character_query_set: CharacterQuerySet) -> list[CharacterEv
                 if EveEntity.is_npc_id(mail_entity.id):
                     continue
 
-            if mail_entity not in MailEntity.Category.eve_entity_compatible():
+            if mail_entity.category not in MailEntity.Category.eve_entity_compatible():
                 continue
 
             result.append(
