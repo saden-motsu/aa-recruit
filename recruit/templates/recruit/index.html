@@ -82,7 +82,7 @@
                                         <summary><a href="{{ system.profile_url }}">({{system.security_status|floatformat:2}}) {{ system.name }}</a></summary>
                                         {% if system_information.mining_ledger_entries %}
                                             <details closed>
-                                                <summary>Ledger Entries: {{ system_information.mining_ledger_entries|length }}</summary>
+                                                <summary>Mining Ledger Entries: {{ system_information.mining_ledger_entries|length }}</summary>
                                                 {% for entry in system_information.mining_ledger_entries %}
                                                     <div>{{ entry }}</div>
                                                 {% endfor %}
