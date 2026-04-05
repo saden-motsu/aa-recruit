@@ -26,6 +26,10 @@ from eveuniverse.models import EveConstellation, EveRegion, EveSolarSystem
 
 from .character_event import CharacterEvent
 from .character_event_converters import get_all_events
+from .interaction_collector import (
+    RecruitInteractionSnapshot,
+    collect_recruit_interaction_snapshot,
+)
 from .location_converters import get_system_interaction_information
 
 
@@ -41,7 +45,7 @@ def _get_main_characters() -> list[str, str, str]:
     )
 
 
-def _get_user_characters(selected_username: str | None) -> CharacterQuerySet:
+def _get_user_characters(selected_username: str) -> CharacterQuerySet:
     return Character.objects.filter(
         eve_character__character_ownership__user__username=selected_username
     ).order_by("-skillpoints__total")
@@ -110,7 +114,7 @@ GroupedCharacterEvents = list[tuple[dict, list[CharacterEvent]]]
 
 def _group_character_events(
     character_events: Iterable[CharacterEvent],
-    user_characters: CharacterQuerySet,
+    character_ids: set[int],
 ) -> GroupedCharacterEvents:
     grouped_events = defaultdict(list)
 
@@ -119,9 +123,7 @@ def _group_character_events(
 
     results: GroupedCharacterEvents = []
     for other_entity, character_events in grouped_events.items():
-        if other_entity.id in user_characters.values_list(
-            "eve_character__character_id", flat=True
-        ):
+        if other_entity.id in character_ids:
             continue
 
         character_events.sort(
@@ -138,8 +140,10 @@ def _group_character_events(
     return results
 
 
-def _get_region_grouped_information(user_characters):
-    system_interaction_information = get_system_interaction_information(user_characters)
+def _get_region_grouped_information(
+    snapshot: RecruitInteractionSnapshot,
+):
+    system_interaction_information = get_system_interaction_information(snapshot)
 
     region_constellation_system_information: dict[
         EveRegion, dict[EveConstellation, dict[EveSolarSystem, Any]]
@@ -176,7 +180,8 @@ def index(request: WSGIRequest) -> HttpResponse:
             return
 
     user_characters = _get_user_characters(selected_username)
-    events = get_all_events(user_characters)
+    snapshot = collect_recruit_interaction_snapshot(user_characters)
+    events = get_all_events(snapshot)
     character_names = _get_character_names(user_characters)
     context = {
         "main_characters": main_characters,
@@ -184,8 +189,10 @@ def index(request: WSGIRequest) -> HttpResponse:
         "user_characters": _map_character_attributes(user_characters),
         "blacklist_url": _get_blacklist_url(character_names),
         "eve411_url": _get_eve411_url(character_names),
-        "character_grouped_events": _group_character_events(events, user_characters),
-        "region_grouped_information": _get_region_grouped_information(user_characters),
+        "character_grouped_events": _group_character_events(
+            events, snapshot.character_ids
+        ),
+        "region_grouped_information": _get_region_grouped_information(snapshot),
     }
 
     return render(request, "recruit/index.html", context)
