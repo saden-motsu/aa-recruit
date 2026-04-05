@@ -525,6 +525,7 @@ def _collect_system_information(
                 location_information.contracts.add(contract)
 
         for asset in _iter_related(character, "assets"):
+            asset.estimated_value = _asset_estimated_value(asset)
             if location_information := get_location_information(asset.location):
                 location_information.assets.append(asset)
 
@@ -542,6 +543,8 @@ def _collect_system_information(
 
     for info in system_information.values():
         for location_info in info.location_information.values():
-            location_info.assets.sort(key=_asset_estimated_value, reverse=True)
+            location_info.assets.sort(
+                key=lambda asset: getattr(asset, "estimated_value", 0), reverse=True
+            )
 
     return system_information
