@@ -133,6 +133,13 @@ def _iter_related(instance, attribute_name: str):
     return related_manager.all()
 
 
+def _asset_estimated_value(asset: CharacterAsset) -> float:
+    average_price = getattr(
+        getattr(asset.eve_type, "market_price", None), "average_price", 0
+    )
+    return float(asset.quantity or 0) * float(average_price or 0)
+
+
 def _is_external_character_entity(
     entity: EveEntity | None,
     character_ids: set[int],
@@ -532,5 +539,9 @@ def _collect_system_information(
                 system_information[planet.eve_planet.eve_solar_system].planets.append(
                     planet
                 )
+
+    for info in system_information.values():
+        for location_info in info.location_information.values():
+            location_info.assets.sort(key=_asset_estimated_value, reverse=True)
 
     return system_information
