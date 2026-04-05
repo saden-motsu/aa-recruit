@@ -10,16 +10,18 @@ from memberaudit.models import (
 )
 
 # Alliance Auth (External Libs)
-from eveuniverse.models import EveEntity
+from eveuniverse.models import EveEntity, EveSolarSystem, EveType
 
 
 @dataclass
 class Interaction:
     recruit: Character
-    other_entity: EveEntity
     kind: str
-    timestamp: datetime | None
     summary: str
+    other_entity: EveEntity | None = None
+    timestamp: datetime | None = None
     details: str | None = None
     isk_value: float | Decimal | None = None
     location: Location | None = None
+    solar_system: EveSolarSystem | None = None
+    eve_types: list[EveType] | None = None

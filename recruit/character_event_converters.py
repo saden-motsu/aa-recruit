@@ -11,10 +11,15 @@ def get_all_events(
     """
     Collect all supported events for the given characters and convert to DTOs.
     """
-    return [_interaction_to_character_event(x) for x in snapshot.interactions]
+    return [
+        _interaction_to_character_event(x)
+        for x in snapshot.interactions
+        if x.other_entity is not None
+    ]
 
 
 def _interaction_to_character_event(interaction: Interaction) -> CharacterEvent:
+    assert interaction.other_entity is not None
     return CharacterEvent(
         recruit=interaction.recruit,
         other_entity=interaction.other_entity,

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 # Standard Library
 import html
-from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 
 # Third Party
@@ -14,8 +13,6 @@ from memberaudit.models import (
     CharacterContract,
     CharacterLocation,
     CharacterMail,
-    CharacterMiningLedgerEntry,
-    CharacterPlanet,
     CharacterWalletJournalEntry,
     CharacterWalletTransaction,
     Location,
@@ -27,30 +24,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, FloatField, Sum
 
 # Alliance Auth (External Libs)
-from eveuniverse.models import EveEntity, EveSolarSystem, EveType
+from eveuniverse.models import EveEntity, EveSolarSystem
 
 from .interaction import Interaction
-
-
-@dataclass
-class LocationInformation:
-    clone_implants: dict[Character, list[EveType]] | None = None
-    transactions: list[CharacterWalletTransaction] = field(default_factory=list)
-    contracts: set[CharacterContract] = field(default_factory=set)
-    assets: list[CharacterAsset] = field(default_factory=list)
-    characters_home: set[Character] = field(default_factory=set)
-
-
-@dataclass
-class SystemInformation:
-    location_information: dict[Location, LocationInformation] = field(
-        default_factory=lambda: defaultdict(LocationInformation)
-    )
-    mining_ledger_entries: list[CharacterMiningLedgerEntry] = field(
-        default_factory=list
-    )
-    planets: list[CharacterPlanet] = field(default_factory=list)
-    characters_in_space: set[Character] = field(default_factory=set)
 
 
 @dataclass(slots=True)
@@ -58,7 +34,6 @@ class RecruitInteractionSnapshot:
     character_ids: set[int]
     characters: list[Character]
     interactions: list[Interaction]
-    system_information: dict[EveSolarSystem, SystemInformation]
 
 
 def collect_recruit_interaction_snapshot(
@@ -77,13 +52,12 @@ def collect_recruit_interaction_snapshot(
         *_collect_contract_interactions(characters, character_ids),
         *_collect_wallet_journal_interactions(characters, character_ids),
         *_collect_wallet_transaction_interactions(characters, character_ids),
+        *_collect_location_interactions(characters),
     ]
-    system_information = _collect_system_information(characters)
     return RecruitInteractionSnapshot(
         character_ids=character_ids,
         characters=characters,
         interactions=interactions,
-        system_information=system_information,
     )
 
 
@@ -276,6 +250,20 @@ def _wallet_transaction_average_price(
     return getattr(market_price, "average_price", None)
 
 
+def _character_location_safe(
+    character_location: CharacterLocation | None,
+) -> Location | None:
+    if character_location is None:
+        return None
+    return character_location.location_safe()
+
+
+def _solar_system_from_location(location: Location | None) -> EveSolarSystem | None:
+    if location is None:
+        return None
+    return getattr(location, "eve_solar_system", None)
+
+
 def _collect_contact_interactions(
     characters: list[Character],
     character_ids: set[int],
@@ -453,98 +441,102 @@ def _collect_wallet_transaction_interactions(
     return result
 
 
-def _collect_system_information(
+def _collect_location_interactions(
     characters: list[Character],
-) -> dict[EveSolarSystem, SystemInformation]:
-    system_information: dict[EveSolarSystem, SystemInformation] = defaultdict(
-        SystemInformation
-    )
-
-    def get_location_information(
-        location: Location | None,
-    ) -> LocationInformation | None:
-        if location and location.eve_solar_system:
-            return system_information[location.eve_solar_system].location_information[
-                location
-            ]
-        return None
-
-    def get_character_location_information(
-        character_location: CharacterLocation | None,
-    ) -> tuple[Location | None, LocationInformation | None]:
-        if character_location is None:
-            return None, None
-        location_safe = character_location.location_safe()
-        if not location_safe or not location_safe.eve_solar_system:
-            return None, None
-        info = system_information[location_safe.eve_solar_system].location_information[
-            location_safe
-        ]
-        return location_safe, info
+) -> list[Interaction]:
+    result: list[Interaction] = []
 
     for character in characters:
         clone_info = _safe_related(character, "clone_info")
-        if clone_info and (
-            location_information := get_location_information(clone_info.home_location)
-        ):
-            location_information.characters_home.add(character)
+        home_location = getattr(clone_info, "home_location", None)
+        if _solar_system_from_location(home_location):
+            result.append(
+                Interaction(
+                    recruit=character,
+                    kind="clone_home",
+                    summary=f"{character.name} home clone",
+                    location=home_location,
+                )
+            )
 
-        current_location, location_information = get_character_location_information(
+        current_location = _character_location_safe(
             _safe_related(character, "location")
         )
-        if location_information:
-            if location_information.clone_implants is None:
-                location_information.clone_implants = {}
-            location_information.clone_implants[character] = [
-                implant.eve_type for implant in _iter_related(character, "implants")
-            ]
-            if current_location and getattr(current_location, "is_solar_system", False):
-                system_information[
-                    current_location.eve_solar_system
-                ].characters_in_space.add(character)
+        implants = [
+            implant.eve_type for implant in _iter_related(character, "implants")
+        ]
+        if _solar_system_from_location(current_location):
+            result.append(
+                Interaction(
+                    recruit=character,
+                    kind="clone",
+                    summary=character.name,
+                    location=current_location,
+                    eve_types=implants,
+                )
+            )
+            if getattr(current_location, "is_solar_system", False):
+                result.append(
+                    Interaction(
+                        recruit=character,
+                        kind="character_in_space",
+                        summary=f"{character.name} in space",
+                        solar_system=current_location.eve_solar_system,
+                    )
+                )
 
         for jump_clone in _iter_related(character, "jump_clones"):
-            if location_information := get_location_information(jump_clone.location):
-                if location_information.clone_implants is None:
-                    location_information.clone_implants = {}
-                location_information.clone_implants[jump_clone.character] = [
-                    implant.eve_type for implant in jump_clone.implants.all()
-                ]
-
-        for wallet_transaction in _iter_related(character, "wallet_transactions"):
-            location_information = get_location_information(wallet_transaction.location)
-            if location_information:
-                location_information.transactions.append(wallet_transaction)
-
-        for contract in _iter_related(character, "contracts"):
-            if location_information := get_location_information(
-                contract.start_location
-            ):
-                location_information.contracts.add(contract)
-            if location_information := get_location_information(contract.end_location):
-                location_information.contracts.add(contract)
+            if _solar_system_from_location(jump_clone.location):
+                result.append(
+                    Interaction(
+                        recruit=jump_clone.character,
+                        kind="jump_clone",
+                        summary=jump_clone.character.name,
+                        location=jump_clone.location,
+                        eve_types=[
+                            implant.eve_type for implant in jump_clone.implants.all()
+                        ],
+                    )
+                )
 
         for asset in _iter_related(character, "assets"):
-            asset.estimated_value = _asset_estimated_value(asset)
-            if location_information := get_location_information(asset.location):
-                location_information.assets.append(asset)
+            estimated_value = _asset_estimated_value(asset)
+            location = asset.location
+            if not _solar_system_from_location(location):
+                continue
+            result.append(
+                Interaction(
+                    recruit=asset.character,
+                    kind="asset",
+                    summary=asset.name_display,
+                    isk_value=estimated_value,
+                    location=location,
+                )
+            )
 
         for mining_ledger_entry in _iter_related(character, "mining_ledger"):
             if mining_ledger_entry.eve_solar_system:
-                system_information[
-                    mining_ledger_entry.eve_solar_system
-                ].mining_ledger_entries.append(mining_ledger_entry)
+                result.append(
+                    Interaction(
+                        recruit=character,
+                        kind="mining_ledger",
+                        summary=str(mining_ledger_entry),
+                        solar_system=mining_ledger_entry.eve_solar_system,
+                    )
+                )
 
         for planet in _iter_related(character, "planets"):
             if planet.eve_planet and planet.eve_planet.eve_solar_system:
-                system_information[planet.eve_planet.eve_solar_system].planets.append(
-                    planet
+                result.append(
+                    Interaction(
+                        recruit=character,
+                        kind="planet",
+                        summary=(
+                            f"{planet.eve_planet.name} "
+                            f"({planet.eve_planet.type_name()})"
+                        ),
+                        solar_system=planet.eve_planet.eve_solar_system,
+                    )
                 )
 
-    for info in system_information.values():
-        for location_info in info.location_information.values():
-            location_info.assets.sort(
-                key=lambda asset: getattr(asset, "estimated_value", 0), reverse=True
-            )
-
-    return system_information
+    return result

@@ -80,37 +80,52 @@
                                 {% for system, system_information in system_grouped_information.items %}
                                     <details open class="system">
                                         <summary><a href="{{ system.profile_url }}">({{system.security_status|floatformat:2}}) {{ system.name }}</a></summary>
-                                        {% if system_information.mining_ledger_entries %}
+                                        {% if system_information.system_interactions.mining_ledger %}
                                             <details closed>
-                                                <summary>Mining Ledger Entries: {{ system_information.mining_ledger_entries|length }}</summary>
-                                                {% for entry in system_information.mining_ledger_entries %}
-                                                    <div>{{ entry }}</div>
+                                                <summary>Mining Ledger Entries: {{ system_information.system_interactions.mining_ledger|length }}</summary>
+                                                {% for interaction in system_information.system_interactions.mining_ledger %}
+                                                    <div>{{ interaction.summary }}</div>
                                                 {% endfor %}
                                             </details>
                                         {% endif %}
-                                        {%  if system_information.planets %}
+                                        {%  if system_information.system_interactions.planet %}
                                             <details closed>
-                                                <summary>PI Planets: {{ system_information.planets|length }}</summary>
-                                                {% for planet in system_information.planets %}
-                                                    <div>{{ planet.eve_planet.name }} ({{ planet.eve_planet.type_name }})</div>
+                                                <summary>PI Planets: {{ system_information.system_interactions.planet|length }}</summary>
+                                                {% for interaction in system_information.system_interactions.planet %}
+                                                    <div>{{ interaction.summary }}</div>
                                                 {% endfor %}
                                             </details>
                                         {% endif %}
-                                        {% for character in system_information.characters_in_space %}
-                                            <div>'{{ character }}'' in space</div>
+                                        {% for interaction in system_information.system_interactions.character_in_space %}
+                                            <div>{{ interaction.summary }}</div>
                                         {% endfor %}
-                                        {% for location, location_information in system_information.location_information.items %}
+                                        {% for location, location_information in system_information.location_interactions.items %}
                                             <details open class="location">
                                                 <summary>{{ location.name_plus }}</summary>
-                                                {% if location_information.clone_implants %}
+                                                {% if location_information.clone or location_information.jump_clone or location_information.clone_home %}
                                                     <div>Clones:</div>
                                                     <ul>
-                                                        {% for character, implants in location_information.clone_implants.items %}
+                                                        {% for interaction in location_information.clone_home %}
                                                             <li>
-                                                                {{ character.name }}
+                                                                {{ interaction.summary }}
+                                                            </li>
+                                                        {% endfor %}
+                                                        {% for interaction in location_information.clone %}
+                                                            <li>
+                                                                {{ interaction.summary }}
                                                                 {% if location.is_solar_system %}in space.{% endif %}
                                                                 <ul>
-                                                                    {% for implant in implants %}
+                                                                    {% for implant in interaction.eve_types %}
+                                                                        <li><a href="{{ implant.profile_url }}" target="_blank">{{ implant.name }}</a></li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            </li>
+                                                        {% endfor %}
+                                                        {% for interaction in location_information.jump_clone %}
+                                                            <li>
+                                                                {{ interaction.summary }}
+                                                                <ul>
+                                                                    {% for implant in interaction.eve_types %}
                                                                         <li><a href="{{ implant.profile_url }}" target="_blank">{{ implant.name }}</a></li>
                                                                     {% endfor %}
                                                                 </ul>
@@ -118,27 +133,40 @@
                                                         {% endfor %}
                                                     </ul>
                                                 {% endif %}
-                                                {% if location_information.transactions %}
+                                                {% if location_information.wallet_transaction %}
                                                     <details closed>
-                                                        <summary>Transactions: {{ location_information.transactions|length }}</summary>
-                                                        {% for transaction in location_information.transactions %}
-                                                            <div>{{ transaction }}</div>
+                                                        <summary>Transactions: {{ location_information.wallet_transaction|length }}</summary>
+                                                        {% for interaction in location_information.wallet_transaction %}
+                                                            <div>
+                                                                {% if interaction.timestamp %}{{ interaction.timestamp|date:"Y-m-d H:i" }} | {% endif %}
+                                                                {{ interaction.recruit.name }}
+                                                                {% if interaction.summary %} | {{ interaction.summary }}{% endif %}
+                                                                {% if interaction.isk_value != None %} | {{ interaction.isk_value|floatformat:"2g" }} ISK{% endif %}
+                                                            </div>
                                                         {% endfor %}
                                                     </details>
                                                 {% endif %}
-                                                {% if location_information.contracts %}
+                                                {% if location_information.contract %}
                                                     <details closed>
-                                                        <summary>Contracts: {{ location_information.contracts|length }}</summary>
-                                                        {% for contract in location_information.contracts %}
-                                                            <div>{{ contract }}</div>
+                                                        <summary>Contracts: {{ location_information.contract|length }}</summary>
+                                                        {% for interaction in location_information.contract %}
+                                                            <details class="event">
+                                                                <summary>
+                                                                    {% if interaction.timestamp %}{{ interaction.timestamp|date:"Y-m-d H:i" }} | {% endif %}
+                                                                    {{ interaction.recruit.name }}
+                                                                    {% if interaction.summary %} | {{ interaction.summary }}{% endif %}
+                                                                    {% if interaction.isk_value != None %} | {{ interaction.isk_value|floatformat:"2g" }} ISK{% endif %}
+                                                                </summary>
+                                                                {% autoescape off %}{{ interaction.details|linebreaks }}{% endautoescape %}
+                                                            </details>
                                                         {% endfor %}
                                                     </details>
                                                 {% endif %}
-                                                {% if location_information.assets %}
+                                                {% if location_information.asset %}
                                                     <details closed>
-                                                        <summary>Assets: {{ location_information.assets|length }}</summary>
-                                                        {% for asset in location_information.assets %}
-                                                            <div>{{ asset.character.name }} | {{ asset.name_display }} | {{ asset.quantity }}x | {{ asset.estimated_value|floatformat:"2g" }} ISK Total</div>
+                                                        <summary>Assets: {{ location_information.asset|length }}</summary>
+                                                        {% for interaction in location_information.asset %}
+                                                            <div>{{ interaction.recruit.name }} | {{ interaction.summary }} | {{ interaction.isk_value|floatformat:"2g" }} ISK Total</div>
                                                         {% endfor %}
                                                     </details>
                                                 {% endif %}

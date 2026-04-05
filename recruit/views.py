@@ -157,7 +157,6 @@ def _get_region_grouped_information(
         if constellation not in region_constellation_system_information[region]:
             region_constellation_system_information[region][constellation] = {}
         region_constellation_system_information[region][constellation][system] = info
-        info.location_information = dict(info.location_information)
 
     return region_constellation_system_information
 
