@@ -92,7 +92,7 @@
                                             <details closed>
                                                 <summary>PI Planets: {{ system_information.planets|length }}</summary>
                                                 {% for planet in system_information.planets %}
-                                                    <div>{{ planet.name }} ({{ planet.type_name }})</div>
+                                                    <div>{{ planet.eve_planet.name }} ({{ planet.eve_planet.type_name }})</div>
                                                 {% endfor %}
                                             </details>
                                         {% endif %}

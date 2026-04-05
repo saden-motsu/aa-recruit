@@ -114,6 +114,7 @@ def _load_characters(character_query_set: CharacterQuerySet) -> list[Character]:
         "assets__eve_type__market_price",
         "mining_ledger__eve_solar_system",
         "planets__eve_planet__eve_solar_system",
+        "planets__eve_planet__eve_type",
     )
     return list(loaded_characters)
 
