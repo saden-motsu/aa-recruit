@@ -24,6 +24,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, FloatField, Sum
 
 # Alliance Auth (External Libs)
+from eveuniverse.constants import EveCategoryId
 from eveuniverse.models import EveEntity, EveSolarSystem
 
 from .interaction import Interaction
@@ -85,7 +86,9 @@ def _load_characters(character_query_set: CharacterQuerySet) -> list[Character]:
         "wallet_journal__first_party",
         "wallet_journal__second_party",
         "assets__location__eve_solar_system",
+        "assets__parent",
         "assets__eve_type__market_price",
+        "assets__eve_type__eve_group",
         "mining_ledger__eve_solar_system",
         "planets__eve_planet__eve_solar_system",
         "planets__eve_planet__eve_type",
@@ -112,6 +115,43 @@ def _asset_estimated_value(asset: CharacterAsset) -> float:
         getattr(asset.eve_type, "market_price", None), "average_price", 0
     )
     return float(asset.quantity or 0) * float(average_price or 0)
+
+
+def _is_ship_asset(asset: CharacterAsset) -> bool:
+    eve_group = getattr(asset.eve_type, "eve_group", None)
+    return getattr(eve_group, "eve_category_id", None) == EveCategoryId.SHIP
+
+
+def _aggregate_asset_values(
+    assets: list[CharacterAsset],
+) -> tuple[dict[int, float], set[int]]:
+    children_by_parent_id: dict[int, list[CharacterAsset]] = {}
+    for asset in assets:
+        if asset.parent_id:
+            children_by_parent_id.setdefault(asset.parent_id, []).append(asset)
+
+    def subtree_value(asset: CharacterAsset) -> float:
+        own_value = _asset_estimated_value(asset)
+        for child in children_by_parent_id.get(asset.id, []):
+            own_value += subtree_value(child)
+        return own_value
+
+    aggregated_values: dict[int, float] = {}
+    assets_inside_ships: set[int] = set()
+
+    for asset in assets:
+        if _is_ship_asset(asset):
+            aggregated_values[asset.id] = subtree_value(asset)
+            for child in children_by_parent_id.get(asset.id, []):
+                stack = [child]
+                while stack:
+                    descendant = stack.pop()
+                    assets_inside_ships.add(descendant.id)
+                    stack.extend(children_by_parent_id.get(descendant.id, []))
+        else:
+            aggregated_values[asset.id] = _asset_estimated_value(asset)
+
+    return aggregated_values, assets_inside_ships
 
 
 def _is_external_character_entity(
@@ -499,8 +539,12 @@ def _collect_location_interactions(
                     )
                 )
 
-        for asset in _iter_related(character, "assets"):
-            estimated_value = _asset_estimated_value(asset)
+        character_assets = list(_iter_related(character, "assets"))
+        asset_values, assets_inside_ships = _aggregate_asset_values(character_assets)
+        for asset in character_assets:
+            if asset.id in assets_inside_ships:
+                continue
+            estimated_value = asset_values.get(asset.id, 0)
             location = asset.location
             if not _solar_system_from_location(location):
                 continue
