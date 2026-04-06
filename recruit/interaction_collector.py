@@ -20,6 +20,7 @@ from memberaudit.models import (
 from memberaudit.models.general import MailEntity
 
 # Django
+from django.contrib.humanize.templatetags.humanize import intword
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, FloatField, Sum
 
@@ -224,15 +225,15 @@ def _contract_details(contract: CharacterContract, isk_value) -> str:
 
     isk_fields = []
     if isk_value:
-        isk_fields.append(f"ISK Value:{str(isk_value)}")
+        isk_fields.append(f"ISK Value:{intword(isk_value)}")
     if price := contract.price:
-        isk_fields.append(f"Price:{price}")
+        isk_fields.append(f"Price:{intword(price)}")
     if reward := contract.reward:
-        isk_fields.append(f"Reward:{reward}")
+        isk_fields.append(f"Reward:{intword(reward)}")
     if collateral := contract.collateral:
-        isk_fields.append(f"Collateral:{collateral}")
+        isk_fields.append(f"Collateral:{intword(collateral)}")
     if buyout := contract.buyout:
-        isk_fields.append(f"Buyout:{buyout}")
+        isk_fields.append(f"Buyout:{intword(buyout)}")
     if isk_fields:
         parts.append(", ".join(isk_fields))
 

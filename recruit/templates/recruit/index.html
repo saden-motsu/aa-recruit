@@ -34,8 +34,8 @@
                         <tr>
                             <td><a href="https://evewho.com/character/{{character.id}}" target="_blank">{{character.name}}</a></td>
                             <td class="text-end">{{character.total_sp|intcomma}}</td>
-                            <td class="text-end">{{character.wallet_isk|floatformat:"2g"}}</td>
-                            <td class="text-end">{{character.asset_value|floatformat:"2g"}}</td>
+                            <td class="text-end">{{ character.wallet_isk|intword }}</td>
+                            <td class="text-end">{{ character.asset_value|intword }}</td>
                         </tr>
                     {% endfor %}
                 </table>
@@ -53,7 +53,7 @@
                                             {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
                                             {{ event.recruit.name }}
                                             {% if event.summary %}{{ event.summary }}{% endif %}
-                                            {% if event.isk_value != None %} | {{ event.isk_value|floatformat:"2g" }} ISK{% endif %}
+                                            {% if event.isk_value != None %} | {{ event.isk_value|intword }} ISK{% endif %}
                                         </summary>
                                         {% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}
                                     </details>
@@ -61,7 +61,7 @@
                                     <div class="event">
                                         {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
                                         {{ event.recruit.name }}
-                                        {% if event.isk_value != None %} | {{ event.isk_value|floatformat:"2g" }} ISK{% endif %}
+                                        {% if event.isk_value != None %} | {{ event.isk_value|intword }} ISK{% endif %}
                                         {% if event.summary %} | {{ event.summary }}{% endif %}
                                     </div>
                                 {% endif %}
@@ -141,7 +141,7 @@
                                                                 {% if interaction.timestamp %}{{ interaction.timestamp|date:"Y-m-d H:i" }} | {% endif %}
                                                                 {{ interaction.recruit.name }}
                                                                 {% if interaction.summary %} | {{ interaction.summary }}{% endif %}
-                                                                {% if interaction.isk_value != None %} | {{ interaction.isk_value|floatformat:"2g" }} ISK{% endif %}
+                                                                {% if interaction.isk_value != None %} | {{ interaction.isk_value|intword }} ISK{% endif %}
                                                             </div>
                                                         {% endfor %}
                                                     </details>
@@ -155,7 +155,7 @@
                                                                     {% if interaction.timestamp %}{{ interaction.timestamp|date:"Y-m-d H:i" }} | {% endif %}
                                                                     {{ interaction.recruit.name }}
                                                                     {% if interaction.summary %} | {{ interaction.summary }}{% endif %}
-                                                                    {% if interaction.isk_value != None %} | {{ interaction.isk_value|floatformat:"2g" }} ISK{% endif %}
+                                                                    {% if interaction.isk_value != None %} | {{ interaction.isk_value|intword }} ISK{% endif %}
                                                                 </summary>
                                                                 {% autoescape off %}{{ interaction.details|linebreaks }}{% endautoescape %}
                                                             </details>
@@ -164,9 +164,9 @@
                                                 {% endif %}
                                                 {% if location_information.asset %}
                                                     <details closed>
-                                                        <summary>Assets: {{ location_information.asset|length }} | {{ location_information.asset_total_value|floatformat:"2g" }} ISK Total</summary>
+                                                        <summary>Assets: {{ location_information.asset|length }} | {{ location_information.asset_total_value|intword }} ISK Total</summary>
                                                         {% for interaction in location_information.asset %}
-                                                            <div>{{ interaction.recruit.name }} | {{ interaction.summary }} | {{ interaction.isk_value|floatformat:"2g" }} ISK Total</div>
+                                                            <div>{{ interaction.recruit.name }} | {{ interaction.summary }} | {{ interaction.isk_value|intword }} ISK Total</div>
                                                         {% endfor %}
                                                     </details>
                                                 {% endif %}
