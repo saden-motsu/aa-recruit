@@ -164,7 +164,7 @@
                                                 {% endif %}
                                                 {% if location_information.asset %}
                                                     <details closed>
-                                                        <summary>Assets: {{ location_information.asset|length }}</summary>
+                                                        <summary>Assets: {{ location_information.asset|length }} | {{ location_information.asset_total_value|floatformat:"2g" }} ISK Total</summary>
                                                         {% for interaction in location_information.asset %}
                                                             <div>{{ interaction.recruit.name }} | {{ interaction.summary }} | {{ interaction.isk_value|floatformat:"2g" }} ISK Total</div>
                                                         {% endfor %}

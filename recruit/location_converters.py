@@ -63,4 +63,7 @@ def _finalize_grouped_interactions(
         finalized["asset"].sort(
             key=lambda interaction: interaction.isk_value or 0, reverse=True
         )
+        finalized["asset_total_value"] = sum(
+            interaction.isk_value or 0 for interaction in finalized["asset"]
+        )
     return finalized
