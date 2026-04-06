@@ -454,7 +454,7 @@ def _collect_location_interactions(
                 Interaction(
                     recruit=character,
                     kind="clone_home",
-                    summary=f"{character.name} home clone",
+                    summary=f"{character.name} home station",
                     location=home_location,
                 )
             )
