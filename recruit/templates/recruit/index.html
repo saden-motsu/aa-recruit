@@ -101,7 +101,7 @@
                                         {% endfor %}
                                         {% for location, location_information in system_information.location_interactions.items %}
                                             <details open class="location">
-                                                <summary>{{ location.name_plus }}</summary>
+                                                <summary>{{ location.name_plus }}{% if location.owner %} | {{ location.owner.name }}{% endif %}</summary>
                                                 {% if location_information.clone or location_information.jump_clone or location_information.clone_home %}
                                                     <div>Clones:</div>
                                                     <ul>
