@@ -58,7 +58,9 @@ def _map_character_attributes(
         "eve_character__character_id": "id",
         "eve_character__character_name": "name",
         "eve_character__corporation_id": "corporation_id",
+        "eve_character__corporation_name": "corporation_name",
         "eve_character__alliance_id": "alliance_id",
+        "eve_character__alliance_name": "alliance_name",
         "wallet_balance__total": "wallet_isk",
         "skillpoints__total": "total_sp",
     }
