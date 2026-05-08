@@ -54,14 +54,13 @@
                         {% for other_character, character_events in character_grouped_events %}
                             <hr/>
                             <h4 class="mt-3">
-                                <a href="https://evewho.com/character/{{other_character.entity.id}}">{{other_character.entity.name}}</a>
                                 {% if other_character.corporation %}
                                     <a href="https://evewho.com/corporation/{{ other_character.corporation.id }}" target="_blank"><img src="https://images.evetech.net/corporations/{{ other_character.corporation.id }}/logo?size=32" alt="{{ other_character.corporation.name }}" title="{{ other_character.corporation.name }}" width="32" height="32"></a>
                                 {% endif %}
                                 {% if other_character.alliance %}
                                     <a href="https://evewho.com/alliance/{{ other_character.alliance.id }}" target="_blank"><img src="https://images.evetech.net/alliances/{{ other_character.alliance.id }}/logo?size=32" alt="{{ other_character.alliance.name }}" title="{{ other_character.alliance.name }}" width="32" height="32"></a>
                                 {% endif %}
-                                ({{character_events|length}})
+                                <a href="https://evewho.com/character/{{other_character.entity.id}}">{{other_character.entity.name}}</a>
                             </h4>
                             {% if other_character.entity_history %}
                                 <details closed>
@@ -79,26 +78,29 @@
                                     </div>
                                 </details>
                             {% endif %}
-                            {% for event in character_events %}
-                                {% if event.details %}
-                                    <details class="event">
-                                        <summary>
+                            <details closed>
+                                <summary>{% translate "Events" %} ({{ character_events|length }})</summary>
+                                {% for event in character_events %}
+                                    {% if event.details %}
+                                        <details class="event">
+                                            <summary>
+                                                {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
+                                                {{ event.recruit.name }}
+                                                {% if event.summary %}{{ event.summary }}{% endif %}
+                                                {% if event.isk_value != None %} | {{ event.isk_value|intword }} ISK{% endif %}
+                                            </summary>
+                                            {% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}
+                                        </details>
+                                    {% else %}
+                                        <div class="event">
                                             {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
                                             {{ event.recruit.name }}
-                                            {% if event.summary %}{{ event.summary }}{% endif %}
                                             {% if event.isk_value != None %} | {{ event.isk_value|intword }} ISK{% endif %}
-                                        </summary>
-                                        {% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}
-                                    </details>
-                                {% else %}
-                                    <div class="event">
-                                        {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
-                                        {{ event.recruit.name }}
-                                        {% if event.isk_value != None %} | {{ event.isk_value|intword }} ISK{% endif %}
-                                        {% if event.summary %} | {{ event.summary }}{% endif %}
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
+                                            {% if event.summary %} | {{ event.summary }}{% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </details>
                         {% endfor %}
                     {% else %}
                         <p class="text-muted">{% translate "No events available." %}</p>
@@ -232,13 +234,11 @@
     details[open] > :not(summary):not(ul):not(ol) {
         margin-left: 1rem;
         padding-left: 0.5rem;
-        border-left: 1px solid black;
     }
     details[open] > ul,
     details[open] > ol {
         margin-left: 1rem;
         padding-left: 0.5rem;
-        border-left: 1px solid black;
         list-style-position: inside;
     }
     .event {
