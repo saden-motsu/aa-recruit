@@ -28,7 +28,7 @@ from django.db.models import F, FloatField, Sum
 from eveuniverse.constants import EveCategoryId
 from eveuniverse.models import EveEntity, EveSolarSystem
 
-from .external_character import ExternalEntityProfile, enrich_profiles
+from .corp_history import EveEntityCorpHistory, get_corp_history
 from .interaction import Interaction
 
 
@@ -37,6 +37,7 @@ class RecruitInteractionSnapshot:
     character_ids: set[int]
     characters: list[Character]
     interactions: list[Interaction]
+    corp_histories: dict[int, EveEntityCorpHistory]
 
 
 def collect_recruit_interaction_snapshot(
@@ -58,17 +59,16 @@ def collect_recruit_interaction_snapshot(
         *_collect_location_interactions(characters),
     ]
 
-    unique_entities = _get_unique_external_entities(interactions)
-    profiles_by_id = enrich_profiles(unique_entities)
-    for interaction in interactions:
-        if interaction.external_entity_profile is not None:
-            entity_id = interaction.external_entity_profile.entity.id
-            interaction.external_entity_profile = profiles_by_id.get(entity_id)
+    unique_entity_ids = _get_unique_entity_ids(interactions)
+    EveEntity.objects.bulk_resolve_ids(unique_entity_ids)
+    entities = EveEntity.objects.in_bulk(list(unique_entity_ids)).values()
+    corp_histories = get_corp_history(entities)
 
     return RecruitInteractionSnapshot(
         character_ids=character_ids,
         characters=characters,
         interactions=interactions,
+        corp_histories=corp_histories,
     )
 
 
@@ -127,15 +127,13 @@ def _iter_related(instance, attribute_name: str):
     return related_manager.all()
 
 
-def _get_unique_external_entities(interactions: list[Interaction]) -> list[EveEntity]:
-    seen: set[int] = set()
-    result: list[EveEntity] = []
+def _get_unique_entity_ids(interactions: list[Interaction]) -> set[EveEntity]:
+    result: set[int] = set()
     for interaction in interactions:
-        profile = interaction.external_entity_profile
-        if profile is None or profile.entity.id in seen:
-            continue
-        seen.add(profile.entity.id)
-        result.append(profile.entity)
+        if interaction.other_entity is not None:
+            result.add(interaction.other_entity.id)
+        if interaction.recruit is not None:
+            result.add(interaction.recruit.eve_character.character_id)
     return result
 
 
@@ -346,7 +344,7 @@ def _collect_contact_interactions(
             result.append(
                 Interaction(
                     recruit=character_contact.character,
-                    external_entity_profile=ExternalEntityProfile(entity=other),
+                    other_entity=other,
                     kind="contact",
                     summary=f"Standings {character_contact.standing:+}",
                     timestamp=None,
@@ -392,7 +390,7 @@ def _collect_mail_interactions(
             result.append(
                 Interaction(
                     recruit=character_mail.character,
-                    external_entity_profile=ExternalEntityProfile(entity=other_entity),
+                    other_entity=other_entity,
                     kind="mail",
                     summary=summary,
                     details=details,
@@ -417,7 +415,7 @@ def _collect_contract_interactions(
             result.append(
                 Interaction(
                     recruit=contract.character,
-                    external_entity_profile=ExternalEntityProfile(entity=other),
+                    other_entity=other,
                     kind="contract",
                     summary=_contract_summary(contract),
                     details=_contract_details(contract, isk_value),
@@ -456,7 +454,7 @@ def _collect_wallet_journal_interactions(
             result.append(
                 Interaction(
                     recruit=entry.character,
-                    external_entity_profile=ExternalEntityProfile(entity=other),
+                    other_entity=other,
                     kind="wallet_journal",
                     summary=summary,
                     details="\n".join(detail_parts) or None,
@@ -495,7 +493,7 @@ def _collect_wallet_transaction_interactions(
             result.append(
                 Interaction(
                     recruit=transaction.character,
-                    external_entity_profile=ExternalEntityProfile(entity=other),
+                    other_entity=other,
                     kind="wallet_transaction",
                     summary=f"{side} {transaction.quantity}x {transaction.eve_type.name}",
                     details=(

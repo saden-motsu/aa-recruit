@@ -5,9 +5,7 @@ from decimal import Decimal
 
 from attr import dataclass
 from memberaudit.models import Character, Location
-from eveuniverse.models import EveSolarSystem, EveType
-
-from .external_character import ExternalEntityProfile
+from eveuniverse.models import EveEntity, EveSolarSystem, EveType
 
 
 @dataclass
@@ -15,7 +13,7 @@ class Interaction:
     recruit: Character
     kind: str
     summary: str
-    external_entity_profile: ExternalEntityProfile | None = None
+    other_entity: EveEntity | None = None
     timestamp: datetime | None = None
     details: str | None = None
     isk_value: float | Decimal | None = None

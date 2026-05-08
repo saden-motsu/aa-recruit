@@ -4,7 +4,7 @@ import logging
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 from django.core.cache import cache
 from eveuniverse.models import EveEntity
@@ -22,27 +22,27 @@ class CorpHistoryEntry:
     start_date: datetime
 
 @dataclass
-class ExternalEntityProfile:
+class EveEntityCorpHistory:
     entity: EveEntity
     corp_history: list[CorpHistoryEntry] = field(default_factory=list)
 
 
-def enrich_profiles(entities: Iterable[EveEntity]) -> dict[int, ExternalEntityProfile]:
-    profiles = {e.id: ExternalEntityProfile(entity=e) for e in entities}
-    profile_list = list(profiles.values())
-    _enrich_corp_histories(profile_list)
-    _enrich_character_corp_histories(profile_list)
-    _enrich_corp_entities(profile_list)
-    return profiles
+def get_corp_history(entities: Iterable[EveEntity]) -> dict[int, EveEntityCorpHistory]:
+    history_by_entity_id = {e.id: EveEntityCorpHistory(entity=e) for e in entities}
+    histories = list(history_by_entity_id.values())
+    _enrich_corp_histories(histories)
+    _enrich_character_corp_histories(histories)
+    _enrich_corp_entities(histories)
+    return history_by_entity_id
 
 
-def _enrich_corp_histories(profiles: list[ExternalEntityProfile]) -> None:
-    for profile in profiles:
-        if profile.entity.is_corporation:
-            profile.corp_history = [CorpHistoryEntry(entity=profile.entity, start_date=datetime.min)]
+def _enrich_corp_histories(histories: list[EveEntityCorpHistory]) -> None:
+    for history in histories:
+        if history.entity.is_corporation:
+            history.corp_history = [CorpHistoryEntry(entity=history.entity, start_date=datetime.min.replace(tzinfo=timezone.utc))]
 
 
-def _enrich_character_corp_histories(profiles: list[ExternalEntityProfile]) -> None:
+def _enrich_character_corp_histories(profiles: list[EveEntityCorpHistory]) -> None:
     character_ids = {p.entity.id for p in profiles if p.entity.is_character}
     if not character_ids:
         return
@@ -97,7 +97,7 @@ def _fetch_corp_history_esi(character_id: int) -> list[dict]:
     return data
 
 
-def _enrich_corp_entities(profiles: list[ExternalEntityProfile]) -> None:
+def _enrich_corp_entities(profiles: list[EveEntityCorpHistory]) -> None:
     corp_ids = set()
     for profile in profiles:
         for entry in profile.corp_history:

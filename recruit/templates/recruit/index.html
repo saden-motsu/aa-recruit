@@ -26,21 +26,17 @@
                 <table class="simple">
                     <tr>
                         <td>{% translate "Character Name" %}</td>
-                        <td>{% translate "Corp" %}</td>
-                        <td>{% translate "Alliance" %}</td>
                         <td>{% translate "Total SP" %}</td>
                         <td>{% translate "Wallet ISK" %}</td>
                         <td>{% translate "Asset ISK" %}</td>
                     </tr>
                     {% for character in user_characters %}
                         <tr>
-                            <td><a href="https://evewho.com/character/{{character.id}}" target="_blank">{{character.name}}</a></td>
                             <td>
+                                <a href="https://evewho.com/character/{{character.id}}" target="_blank">{{character.name}}</a>
                                 {% if character.corporation_id %}
                                     <a href="https://evewho.com/corporation/{{ character.corporation_id }}" target="_blank"><img src="https://images.evetech.net/corporations/{{ character.corporation_id }}/logo?size=32" alt="{{ character.corporation_name }}" title="{{ character.corporation_name }}" width="32" height="32"></a>
                                 {% endif %}
-                            </td>
-                            <td>
                                 {% if character.alliance_id %}
                                     <a href="https://evewho.com/alliance/{{ character.alliance_id }}" target="_blank"><img src="https://images.evetech.net/alliances/{{ character.alliance_id }}/logo?size=32" alt="{{ character.alliance_name }}" title="{{ character.alliance_name }}" width="32" height="32"></a>
                                 {% endif %}
@@ -58,7 +54,7 @@
                         {% for other_character, character_events in character_grouped_events %}
                             <hr/>
                             <h4 class="mt-3">
-                                <a href="https://evewho.com/character/{{other_character.id}}">{{other_character.name}}</a>
+                                <a href="https://evewho.com/character/{{other_character.entity.id}}">{{other_character.entity.name}}</a>
                                 {% if other_character.corporation %}
                                     <a href="https://evewho.com/corporation/{{ other_character.corporation.id }}" target="_blank"><img src="https://images.evetech.net/corporations/{{ other_character.corporation.id }}/logo?size=32" alt="{{ other_character.corporation.name }}" title="{{ other_character.corporation.name }}" width="32" height="32"></a>
                                 {% endif %}
@@ -67,6 +63,22 @@
                                 {% endif %}
                                 ({{character_events|length}})
                             </h4>
+                            {% if other_character.entity_history %}
+                                <details closed>
+                                    <summary>{% translate "Corp History" %} ({{other_character.entity_history|length}})</summary>
+                                    <div class="mt-2">
+                                        {% for row in other_character.entity_history %}
+                                            <div>
+                                                {{ row.start|date:"Y-m-d" }} —
+                                                <a href="https://evewho.com/corporation/{{ row.corp.id }}" target="_blank"><img src="https://images.evetech.net/corporations/{{ row.corp.id }}/logo?size=32" alt="{{ row.corp.name }}" title="{{ row.corp.name }}" width="16" height="16"> {{ row.corp.name }}</a>
+                                                {% if row.alliance %}
+                                                    / <a href="https://evewho.com/alliance/{{ row.alliance.id }}" target="_blank"><img src="https://images.evetech.net/alliances/{{ row.alliance.id }}/logo?size=32" alt="{{ row.alliance.name }}" title="{{ row.alliance.name }}" width="16" height="16"> {{ row.alliance.name }}</a>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </details>
+                            {% endif %}
                             {% for event in character_events %}
                                 {% if event.details %}
                                     <details class="event">
