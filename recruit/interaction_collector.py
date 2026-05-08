@@ -28,6 +28,7 @@ from django.db.models import F, FloatField, Sum
 from eveuniverse.constants import EveCategoryId
 from eveuniverse.models import EveEntity, EveSolarSystem
 
+from .external_character import ExternalEntityProfile, enrich_profiles
 from .interaction import Interaction
 
 
@@ -56,6 +57,14 @@ def collect_recruit_interaction_snapshot(
         *_collect_wallet_transaction_interactions(characters, character_ids),
         *_collect_location_interactions(characters),
     ]
+
+    unique_entities = _get_unique_external_entities(interactions)
+    profiles_by_id = enrich_profiles(unique_entities)
+    for interaction in interactions:
+        if interaction.external_entity_profile is not None:
+            entity_id = interaction.external_entity_profile.entity.id
+            interaction.external_entity_profile = profiles_by_id.get(entity_id)
+
     return RecruitInteractionSnapshot(
         character_ids=character_ids,
         characters=characters,
@@ -116,6 +125,18 @@ def _iter_related(instance, attribute_name: str):
     if related_manager is None:
         return []
     return related_manager.all()
+
+
+def _get_unique_external_entities(interactions: list[Interaction]) -> list[EveEntity]:
+    seen: set[int] = set()
+    result: list[EveEntity] = []
+    for interaction in interactions:
+        profile = interaction.external_entity_profile
+        if profile is None or profile.entity.id in seen:
+            continue
+        seen.add(profile.entity.id)
+        result.append(profile.entity)
+    return result
 
 
 def _asset_estimated_value(asset: CharacterAsset) -> float:
@@ -325,7 +346,7 @@ def _collect_contact_interactions(
             result.append(
                 Interaction(
                     recruit=character_contact.character,
-                    other_entity=other,
+                    external_entity_profile=ExternalEntityProfile(entity=other),
                     kind="contact",
                     summary=f"Standings {character_contact.standing:+}",
                     timestamp=None,
@@ -371,7 +392,7 @@ def _collect_mail_interactions(
             result.append(
                 Interaction(
                     recruit=character_mail.character,
-                    other_entity=other_entity,
+                    external_entity_profile=ExternalEntityProfile(entity=other_entity),
                     kind="mail",
                     summary=summary,
                     details=details,
@@ -396,7 +417,7 @@ def _collect_contract_interactions(
             result.append(
                 Interaction(
                     recruit=contract.character,
-                    other_entity=other,
+                    external_entity_profile=ExternalEntityProfile(entity=other),
                     kind="contract",
                     summary=_contract_summary(contract),
                     details=_contract_details(contract, isk_value),
@@ -435,7 +456,7 @@ def _collect_wallet_journal_interactions(
             result.append(
                 Interaction(
                     recruit=entry.character,
-                    other_entity=other,
+                    external_entity_profile=ExternalEntityProfile(entity=other),
                     kind="wallet_journal",
                     summary=summary,
                     details="\n".join(detail_parts) or None,
@@ -474,7 +495,7 @@ def _collect_wallet_transaction_interactions(
             result.append(
                 Interaction(
                     recruit=transaction.character,
-                    other_entity=other,
+                    external_entity_profile=ExternalEntityProfile(entity=other),
                     kind="wallet_transaction",
                     summary=f"{side} {transaction.quantity}x {transaction.eve_type.name}",
                     details=(

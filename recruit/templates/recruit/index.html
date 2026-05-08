@@ -37,16 +37,12 @@
                             <td><a href="https://evewho.com/character/{{character.id}}" target="_blank">{{character.name}}</a></td>
                             <td>
                                 {% if character.corporation_id %}
-                                    <a href="https://evewho.com/corporation/{{ character.corporation_id }}" target="_blank">
-                                        <img src="https://images.evetech.net/corporations/{{ character.corporation_id }}/logo?size=32" alt="{{ character.corporation_name }}" title="{{ character.corporation_name }}" width="32" height="32">
-                                    </a>
+                                    <a href="https://evewho.com/corporation/{{ character.corporation_id }}" target="_blank"><img src="https://images.evetech.net/corporations/{{ character.corporation_id }}/logo?size=32" alt="{{ character.corporation_name }}" title="{{ character.corporation_name }}" width="32" height="32"></a>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if character.alliance_id %}
-                                    <a href="https://evewho.com/alliance/{{ character.alliance_id }}" target="_blank">
-                                        <img src="https://images.evetech.net/alliances/{{ character.alliance_id }}/logo?size=32" alt="{{ character.alliance_name }}" title="{{ character.alliance_name }}" width="32" height="32">
-                                    </a>
+                                    <a href="https://evewho.com/alliance/{{ character.alliance_id }}" target="_blank"><img src="https://images.evetech.net/alliances/{{ character.alliance_id }}/logo?size=32" alt="{{ character.alliance_name }}" title="{{ character.alliance_name }}" width="32" height="32"></a>
                                 {% endif %}
                             </td>
                             <td class="text-end">{{character.total_sp|intcomma}}</td>
@@ -61,7 +57,13 @@
                         <summary>{% translate "Character Grouped Events" %}</summary>
                         {% for other_character, character_events in character_grouped_events %}
                             <hr/>
-                            <h4 class="mt-3"><a href="https://evewho.com/character/{{other_character.id}}">{{other_character.name}}</a> ({{character_events|length}})</h4>
+                            <h4 class="mt-3">
+                                <a href="https://evewho.com/character/{{other_character.id}}">{{other_character.name}}</a>
+                                {% if other_character.corporation %}
+                                    <a href="https://evewho.com/corporation/{{ other_character.corporation.id }}" target="_blank"><img src="https://images.evetech.net/corporations/{{ other_character.corporation.id }}/logo?size=32" alt="{{ other_character.corporation.name }}" title="{{ other_character.corporation.name }}" width="32" height="32"></a>
+                                {% endif %}
+                                ({{character_events|length}})
+                            </h4>
                             {% for event in character_events %}
                                 {% if event.details %}
                                     <details class="event">

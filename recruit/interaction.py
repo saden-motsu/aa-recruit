@@ -1,16 +1,13 @@
-# Standard Library
+from __future__ import annotations
+
 from datetime import datetime
 from decimal import Decimal
 
-# Third Party
 from attr import dataclass
-from memberaudit.models import (
-    Character,
-    Location,
-)
+from memberaudit.models import Character, Location
+from eveuniverse.models import EveSolarSystem, EveType
 
-# Alliance Auth (External Libs)
-from eveuniverse.models import EveEntity, EveSolarSystem, EveType
+from .external_character import ExternalEntityProfile
 
 
 @dataclass
@@ -18,7 +15,7 @@ class Interaction:
     recruit: Character
     kind: str
     summary: str
-    other_entity: EveEntity | None = None
+    external_entity_profile: ExternalEntityProfile | None = None
     timestamp: datetime | None = None
     details: str | None = None
     isk_value: float | Decimal | None = None

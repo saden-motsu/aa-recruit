@@ -317,6 +317,10 @@ LOGGING = {
             "handlers": ["extension_file", "console"],
             "level": "DEBUG",
         },
+        "recruit": {
+            "handlers": ["extension_file", "console"],
+            "level": "DEBUG",
+        },
         "django": {
             "handlers": ["log_file", "console"],
             "level": "ERROR",

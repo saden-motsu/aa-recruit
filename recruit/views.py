@@ -1,11 +1,14 @@
 """App Views"""
 
 # Standard Library
+import logging
 from collections import defaultdict
 from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 from urllib.parse import quote
+
+logger = logging.getLogger(__name__)
 
 # Third Party
 from memberaudit.managers.characters import CharacterQuerySet
@@ -26,6 +29,7 @@ from eveuniverse.models import EveConstellation, EveRegion, EveSolarSystem
 
 from .character_event import CharacterEvent
 from .character_event_converters import get_all_events
+from .external_character import ExternalEntityProfile
 from .interaction_collector import (
     RecruitInteractionSnapshot,
     collect_recruit_interaction_snapshot,
@@ -117,27 +121,40 @@ GroupedCharacterEvents = list[tuple[dict, list[CharacterEvent]]]
 def _group_character_events(
     character_events: Iterable[CharacterEvent],
     character_ids: set[int],
+    profiles_by_entity_id: dict[int, ExternalEntityProfile],
 ) -> GroupedCharacterEvents:
-    grouped_events = defaultdict(list)
-
+    grouped_events: dict[int, list[CharacterEvent]] = defaultdict(list)
     for character_event in character_events:
-        grouped_events[character_event.other_entity].append(character_event)
+        entity_id = character_event.other_entity.id
+        if entity_id in profiles_by_entity_id:
+            grouped_events[entity_id].append(character_event)
+        else:
+            logger.error(
+                "No profile for entity %s (%s)",
+                character_event.other_entity.id,
+                character_event.other_entity.name,
+            )
 
     results: GroupedCharacterEvents = []
-    for other_entity, character_events in grouped_events.items():
-        if other_entity.id in character_ids:
+    for entity_id, events in grouped_events.items():
+        if entity_id in character_ids:
             continue
 
-        character_events.sort(
+        profile = profiles_by_entity_id[entity_id]
+        events.sort(
             key=lambda x: (x.timestamp is None, x.timestamp or datetime.max),
             reverse=True,
         )
 
-        other_character_dict = {
-            "id": other_entity.id,
-            "name": other_entity.name,
-        }
-        results.append((other_character_dict, character_events))
+        current_corp = profile.corp_history[0].entity if profile.corp_history else None
+        results.append((
+            {
+                "id": profile.entity.id,
+                "name": profile.entity.name,
+                "corporation": current_corp,
+            },
+            events,
+        ))
 
     return results
 
@@ -184,6 +201,11 @@ def index(request: WSGIRequest) -> HttpResponse:
     snapshot = collect_recruit_interaction_snapshot(user_characters)
     events = get_all_events(snapshot)
     character_names = _get_character_names(user_characters)
+    profiles_by_entity_id = {
+        i.external_entity_profile.entity.id: i.external_entity_profile
+        for i in snapshot.interactions
+        if i.external_entity_profile is not None
+    }
     context = {
         "main_characters": main_characters,
         "selected_username": selected_username,
@@ -191,7 +213,7 @@ def index(request: WSGIRequest) -> HttpResponse:
         "blacklist_url": _get_blacklist_url(character_names),
         "eve411_url": _get_eve411_url(character_names),
         "character_grouped_events": _group_character_events(
-            events, snapshot.character_ids
+            events, snapshot.character_ids, profiles_by_entity_id
         ),
         "region_grouped_information": _get_region_grouped_information(snapshot),
     }
