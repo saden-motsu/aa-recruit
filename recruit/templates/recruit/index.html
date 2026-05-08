@@ -62,6 +62,9 @@
                                 {% if other_character.corporation %}
                                     <a href="https://evewho.com/corporation/{{ other_character.corporation.id }}" target="_blank"><img src="https://images.evetech.net/corporations/{{ other_character.corporation.id }}/logo?size=32" alt="{{ other_character.corporation.name }}" title="{{ other_character.corporation.name }}" width="32" height="32"></a>
                                 {% endif %}
+                                {% if other_character.alliance %}
+                                    <a href="https://evewho.com/alliance/{{ other_character.alliance.id }}" target="_blank"><img src="https://images.evetech.net/alliances/{{ other_character.alliance.id }}/logo?size=32" alt="{{ other_character.alliance.name }}" title="{{ other_character.alliance.name }}" width="32" height="32"></a>
+                                {% endif %}
                                 ({{character_events|length}})
                             </h4>
                             {% for event in character_events %}
