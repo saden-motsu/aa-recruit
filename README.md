@@ -36,6 +36,7 @@ available through the Member Audit tool, just repackaged and restructured.
 
 ## TODOs
 - Corp history for recruit characters
+- If the other "character" is a corp, the evewho/dotlan link is broken.
 - List discord ID for synced characters.
 - Flag users with characters not registered with alliance auth.
 - Lightweight home page that lists non-member users and their current auth state. Links to their recruit page.
@@ -61,3 +62,4 @@ available through the Member Audit tool, just repackaged and restructured.
     - Interactions with characters currently in enemy groups is more suspicious than current corp members.
     - Mining in hostile sov. null is different than mining near Jita.
     - On the backend this should just be tracked as a number between 0-1. Fuzzy logic can be used to combine factors. Rendering thresholds should be independent.
+    - This should be encorpreated into sorting.
