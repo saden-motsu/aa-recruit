@@ -36,29 +36,34 @@ available through the Member Audit tool, just repackaged and restructured.
 
 ## TODOs
 - Corp history for recruit characters
-- List discord ID for synced characters.
-- Flag users with characters not registered with alliance auth.
-- Lightweight home page that lists non-member users and their current auth state. Links to their recruit page.
-    - Flag users with characters not registered with alliance auth.
-- Make the clones list in stations a detail object.
-- Assets lack a quantity indicator.
-- Assets should load the relevant icons images.
-- Asset hierarchy should be respected. Containers and ships should allow items to be broken out.
-- Ships should include the ship name as well as the hull type.
-- Stations, systems, constellations, & regions should include some metadata at the top level.
-    - Total asset value.
-    - Total asset safety wraps.
-    - Clone count.
-    - Contract total.
-- Systems should have soverignty listed.
-- Constellations & Regions should list plurality ownership.
-- Integrate killboard data.
-    - By default this will generate too much noise.
-    - Every character that a player has everfought with or against is too much data to be useful.
-    - More useful is to track killboard information for characters that have other associated metadata.
 - Implement a priority system.
     - Most of the data we have is noise. Something like a traffic light system, or literal red flag (🚩) could help recruiters decide on what to focus on.
     - Interactions with characters currently in enemy groups is more suspicious than current corp members.
     - Mining in hostile sov. null is different than mining near Jita.
     - On the backend this should just be tracked as a number between 0-1. Fuzzy logic can be used to combine factors. Rendering thresholds should be independent.
     - This should be encorpreated into sorting.
+
+- Lightweight home page that lists non-member users and their current auth state. Links to their recruit page.
+    - Flag users with characters not registered with alliance auth.
+    - List discord ID for synced characters.
+    - Flag users with characters not registered with alliance auth.
+
+- Location Grouped Events
+    - Make the clones list in stations a detail object.
+    - Assets lack a quantity indicator.
+    - Assets should load the relevant icons images.
+    - Asset hierarchy should be respected. Containers and ships should allow items to be broken out.
+    - Ships should include the ship name as well as the hull type.
+    - Stations, systems, constellations, & regions should include some metadata at the top level.
+        - Total asset value.
+        - Total asset safety wraps.
+        - Clone count.
+        - Contract total.
+- Soverignty
+    - Systems should have soverignty listed.
+    - Constellations & Regions should list plurality ownership.
+- Integrate killboard data.
+    - By default killboards will generate too much noise.
+    - Prioritization must come first.
+    - Every character that a player has everfought with or against is too much data to be useful.
+    - More useful is to track killboard information for characters that have other associated metadata.
