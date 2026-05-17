@@ -59,7 +59,7 @@
                                 {% if other_character.alliance %}
                                     <a href="https://evewho.com/alliance/{{ other_character.alliance.id }}" target="_blank"><img src="https://images.evetech.net/alliances/{{ other_character.alliance.id }}/logo?size=32" alt="{{ other_character.alliance.name }}" title="{{ other_character.alliance.name }}" width="32" height="32"></a>
                                 {% endif %}
-                                <a href="https://evewho.com/character/{{other_character.entity.id}}">{{other_character.entity.name}}</a>
+                                <a href="{{ other_character.entity.profile_url }}">{{ other_character.entity.name }}</a>
                             </h4>
                             {% if other_character.entity_history %}
                                 <details closed>

@@ -36,7 +36,6 @@ available through the Member Audit tool, just repackaged and restructured.
 
 ## TODOs
 - Corp history for recruit characters
-- If the other "character" is a corp, the evewho/dotlan link is broken.
 - List discord ID for synced characters.
 - Flag users with characters not registered with alliance auth.
 - Lightweight home page that lists non-member users and their current auth state. Links to their recruit page.
