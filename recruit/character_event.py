@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # Standard Library
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 
@@ -24,3 +24,4 @@ class CharacterEvent:
     details: str | None = None
     timestamp: datetime | None = None
     isk_value: Decimal | None = None
+    priority_score: float = field(default=0.0, compare=False)

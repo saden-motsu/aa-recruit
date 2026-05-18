@@ -60,6 +60,14 @@
                                     <a href="https://evewho.com/alliance/{{ other_character.alliance.id }}" target="_blank"><img src="https://images.evetech.net/alliances/{{ other_character.alliance.id }}/logo?size=32" alt="{{ other_character.alliance.name }}" title="{{ other_character.alliance.name }}" width="32" height="32"></a>
                                 {% endif %}
                                 <a href="{{ other_character.entity.profile_url }}">{{ other_character.entity.name }}</a>
+                                {% with s=other_character.priority_score %}
+                                    {% if s >= 0.7 %}<span class="badge bg-danger">!
+                                    {% elif s >= 0.3 %}<span class="badge bg-warning text-dark">!
+                                    {% else %}<span class="badge bg-success">✓
+                                    {% endif %}
+                                    ({{ s | floatformat:2 }})
+                                    </span>
+                                {% endwith %}
                             </h4>
                             {% if other_character.entity_history %}
                                 <details closed>
@@ -80,24 +88,34 @@
                             <details closed>
                                 <summary>{% translate "Events" %} ({{ character_events|length }})</summary>
                                 {% for event in character_events %}
-                                    {% if event.details %}
-                                        <details class="event">
-                                            <summary>
+                                    {% with s=event.priority_score %}
+                                        {% if event.details %}
+                                            <details class="event">
+                                                <summary>
+                                                    {% if s >= 0.7 %}<span class="badge bg-danger">!
+                                                    {% elif s >= 0.3 %}<span class="badge bg-warning text-dark">!
+                                                    {% else %}<span class="badge bg-success">✓
+                                                    {% endif %}({{ s|floatformat:2 }})</span>
+                                                    {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
+                                                    {{ event.recruit.name }} |
+                                                    {% if event.summary %}{{ event.summary }}{% endif %}
+                                                    {% if event.isk_value != None %} | {{ event.isk_value|intword }} ISK{% endif %}
+                                                </summary>
+                                                {% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}
+                                            </details>
+                                        {% else %}
+                                            <div class="event">
+                                                {% if s >= 0.7 %}<span class="badge bg-danger">!
+                                                {% elif s >= 0.3 %}<span class="badge bg-warning text-dark">!
+                                                {% else %}<span class="badge bg-success">✓
+                                                {% endif %} ({{ s|floatformat:2 }}) </span>
                                                 {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
                                                 {{ event.recruit.name }}
-                                                {% if event.summary %}{{ event.summary }}{% endif %}
                                                 {% if event.isk_value != None %} | {{ event.isk_value|intword }} ISK{% endif %}
-                                            </summary>
-                                            {% autoescape off %}{{ event.details|linebreaks }}{% endautoescape %}
-                                        </details>
-                                    {% else %}
-                                        <div class="event">
-                                            {% if event.timestamp %}{{ event.timestamp|date:"Y-m-d H:i" }} | {% endif %}
-                                            {{ event.recruit.name }}
-                                            {% if event.isk_value != None %} | {{ event.isk_value|intword }} ISK{% endif %}
-                                            {% if event.summary %} | {{ event.summary }}{% endif %}
-                                        </div>
-                                    {% endif %}
+                                                {% if event.summary %} | {{ event.summary }}{% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endwith %}
                                 {% endfor %}
                             </details>
                         {% endfor %}

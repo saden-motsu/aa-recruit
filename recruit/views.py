@@ -4,7 +4,7 @@
 import logging
 from collections import defaultdict
 from collections.abc import Iterable
-from datetime import datetime
+
 from typing import Any
 from urllib.parse import quote
 
@@ -29,6 +29,7 @@ from eveuniverse.models import EveConstellation, EveRegion, EveSolarSystem
 
 from .character_event import CharacterEvent
 from .character_event_converters import get_all_events
+from .priority import score_all_interactions, score_event_group
 from .corp_alliance_history import AllianceHistoryEntry, get_corp_alliance_histories
 from .corp_history import EveEntityCorpHistory
 from .interaction_collector import (
@@ -120,6 +121,21 @@ def _get_eve411_url(character_names: Iterable[str]) -> str | None:
 GroupedCharacterEvents = list[tuple[dict, list[CharacterEvent]]]
 
 
+def _get_recruit_affiliation_ids(
+    character_query: CharacterQuerySet,
+) -> tuple[set[int], set[int]]:
+    corp_ids: set[int] = set()
+    alliance_ids: set[int] = set()
+    for row in character_query.values(
+        "eve_character__corporation_id", "eve_character__alliance_id"
+    ):
+        if corp_id := row.get("eve_character__corporation_id"):
+            corp_ids.add(corp_id)
+        if alliance_id := row.get("eve_character__alliance_id"):
+            alliance_ids.add(alliance_id)
+    return corp_ids, alliance_ids
+
+
 def _group_character_events(
     character_events: Iterable[CharacterEvent],
     character_ids: set[int],
@@ -134,25 +150,25 @@ def _group_character_events(
         if entity_id in character_ids:
             continue
 
-        events.sort(
-            key=lambda x: (x.timestamp is None, x.timestamp or datetime.max),
-            reverse=True,
-        )
+        events.sort(key=lambda x: x.priority_score, reverse=True)
 
         corp_history = corp_histories.get(entity_id)
         current_corp = corp_history.corp_history[0].entity if corp_history and corp_history.corp_history else None
         alliance_history = corp_alliance_histories.get(current_corp.id, []) if current_corp else []
         current_alliance = alliance_history[0] if alliance_history else None
+        group_score = score_event_group(events)
         results.append((
             {
                 "entity": corp_history.entity,
                 "corporation": current_corp,
                 "alliance": current_alliance.entity if current_alliance else None,
                 "entity_history": get_entity_history(corp_history, corp_alliance_histories),
+                "priority_score": group_score,
             },
             events,
         ))
 
+    results.sort(key=lambda x: x[0]["priority_score"], reverse=True)
     return results
 
 
@@ -196,7 +212,6 @@ def index(request: WSGIRequest) -> HttpResponse:
 
     user_characters = _get_user_characters(selected_username)
     snapshot = collect_recruit_interaction_snapshot(user_characters)
-    events = get_all_events(snapshot)
     character_names = _get_character_names(user_characters)
     corp_histories = snapshot.corp_histories
     corp_ids = {
@@ -205,6 +220,15 @@ def index(request: WSGIRequest) -> HttpResponse:
         for entry in profile.corp_history
     }
     corp_alliance_histories = get_corp_alliance_histories(corp_ids)
+    recruit_corp_ids, recruit_alliance_ids = _get_recruit_affiliation_ids(user_characters)
+    score_all_interactions(
+        snapshot.interactions,
+        corp_histories,
+        corp_alliance_histories,
+        recruit_corp_ids,
+        recruit_alliance_ids,
+    )
+    events = get_all_events(snapshot)
     context = {
         "main_characters": main_characters,
         "selected_username": selected_username,
@@ -212,7 +236,10 @@ def index(request: WSGIRequest) -> HttpResponse:
         "blacklist_url": _get_blacklist_url(character_names),
         "eve411_url": _get_eve411_url(character_names),
         "character_grouped_events": _group_character_events(
-            events, snapshot.character_ids, corp_histories, corp_alliance_histories
+            events,
+            snapshot.character_ids,
+            corp_histories,
+            corp_alliance_histories,
         ),
         "region_grouped_information": _get_region_grouped_information(snapshot),
     }

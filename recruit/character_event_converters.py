@@ -27,4 +27,5 @@ def _interaction_to_character_event(interaction: Interaction) -> CharacterEvent:
         details=interaction.details,
         timestamp=interaction.timestamp,
         isk_value=interaction.isk_value,
+        priority_score=interaction.priority_score,
     )

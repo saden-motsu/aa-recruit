@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # Standard Library
 import html
+import math
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -295,16 +296,21 @@ def _wallet_transaction_counterparty(
     return None
 
 
+def _safe_float_ratio(numerator, denominator) -> float | None:
+    try:
+        result = float(numerator) / float(denominator)
+        return result if math.isfinite(result) else None
+    except (ArithmeticError, TypeError, ValueError, OverflowError):
+        return None
+
+
 def _wallet_transaction_ratio(
     transaction: CharacterWalletTransaction,
-) -> Decimal | None:
+) -> float | None:
     market_price = _wallet_transaction_average_price(transaction)
     if market_price is None or market_price <= 0:
         return None
-    try:
-        return Decimal(transaction.unit_price) / Decimal(market_price)
-    except (ArithmeticError, ValueError):
-        return None
+    return _safe_float_ratio(transaction.unit_price, market_price)
 
 
 def _wallet_transaction_average_price(
@@ -347,6 +353,7 @@ def _collect_contact_interactions(
                     other_entity=other,
                     kind="contact",
                     summary=f"Standings {character_contact.standing:+}",
+                    standing=float(character_contact.standing),
                     timestamp=None,
                 )
             )
@@ -400,6 +407,12 @@ def _collect_mail_interactions(
     return result
 
 
+def _contract_price_ratio(contract: CharacterContract, isk_value) -> float | None:
+    if contract.contract_type != CharacterContract.TYPE_ITEM_EXCHANGE:
+        return None
+    return _safe_float_ratio(contract.price, isk_value)
+
+
 def _collect_contract_interactions(
     characters: list[Character],
     character_ids: set[int],
@@ -411,12 +424,16 @@ def _collect_contract_interactions(
             if not other:
                 continue
             isk_value = _contract_isk_value(contract)
-            location = contract.end_location or contract.start_location
+            kind = (
+                "contract_item_exchange"
+                if contract.contract_type == CharacterContract.TYPE_ITEM_EXCHANGE
+                else "contract_courier"
+            )
             result.append(
                 Interaction(
                     recruit=contract.character,
                     other_entity=other,
-                    kind="contract",
+                    kind=kind,
                     summary=_contract_summary(contract),
                     details=_contract_details(contract, isk_value),
                     timestamp=contract.date_completed
@@ -424,7 +441,8 @@ def _collect_contract_interactions(
                     or contract.date_accepted
                     or contract.date_issued,
                     isk_value=isk_value,
-                    location=location,
+                    location=contract.end_location or contract.start_location,
+                    price_ratio=_contract_price_ratio(contract, isk_value),
                 )
             )
     return result
@@ -443,6 +461,7 @@ def _collect_wallet_journal_interactions(
             if entry.ref_type not in {"player_donation", "player_trading"}:
                 continue
 
+            kind = "wallet_journal_donation" if entry.ref_type == "player_donation" else "wallet_journal_trading"
             summary = entry.ref_type.replace("_", " ").title()
             detail_parts: list[str] = []
             if entry.context_id:
@@ -455,7 +474,7 @@ def _collect_wallet_journal_interactions(
                 Interaction(
                     recruit=entry.character,
                     other_entity=other,
-                    kind="wallet_journal",
+                    kind=kind,
                     summary=summary,
                     details="\n".join(detail_parts) or None,
                     timestamp=entry.date,
@@ -477,7 +496,7 @@ def _collect_wallet_transaction_interactions(
                 continue
 
             ratio = _wallet_transaction_ratio(transaction)
-            if ratio is None or (Decimal("0.1") < ratio < Decimal("2")):
+            if ratio is None or (0.5 < ratio < 1.5):
                 continue
 
             total_price = transaction.quantity * transaction.unit_price
@@ -489,7 +508,7 @@ def _collect_wallet_transaction_interactions(
                 continue
 
             side = "Buy" if transaction.is_buy else "Sell"
-            percent = float(ratio * Decimal("100"))
+            percent = ratio * 100
             result.append(
                 Interaction(
                     recruit=transaction.character,
@@ -503,6 +522,7 @@ def _collect_wallet_transaction_interactions(
                     timestamp=transaction.date,
                     isk_value=transaction.unit_price * transaction.quantity,
                     location=transaction.location,
+                    price_ratio=ratio,
                 )
             )
     return result

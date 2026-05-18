@@ -20,3 +20,6 @@ class Interaction:
     location: Location | None = None
     solar_system: EveSolarSystem | None = None
     eve_types: list[EveType] | None = None
+    standing: float | None = None
+    price_ratio: float | None = None
+    priority_score: float = 0.0
